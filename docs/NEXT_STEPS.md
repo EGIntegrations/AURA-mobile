@@ -6,3 +6,4 @@
 - Add backend sync for multi-device user profiles.
 
 codex resume 019bd6a5-c954-7322-b810-c137959eee9e
+codex resume 019be101-ae22-73f2-a9a5-f4ea60a8d050
