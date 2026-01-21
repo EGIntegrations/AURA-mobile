@@ -5,12 +5,16 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
+import { Camera, CameraView } from 'expo-camera';
+import type { CameraType } from 'expo-camera';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { AudioService } from '../services/AudioService';
 import { OpenAIService } from '../services/OpenAIService';
 import { UserMonitoringService } from '../services/UserMonitoringService';
+import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 const EMOTIONS = ['Happy', 'Sad', 'Angry', 'Surprised', 'Fear', 'Neutral'];
 
@@ -22,8 +26,9 @@ export default function VisionTrainingScreen({ navigation }: any) {
   const [isTraining, setIsTraining] = useState(false);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState('');
-  const cameraRef = useRef<Camera>(null);
+  const cameraRef = useRef<CameraView>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const cameraFacing: CameraType = 'front';
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -120,16 +125,14 @@ export default function VisionTrainingScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Camera ref={cameraRef} style={StyleSheet.absoluteFill} type={CameraType.front} />
+      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={cameraFacing} />
 
       <View style={styles.overlay}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Vision Training</Text>
-          <View style={{ width: 60 }} />
-        </View>
+        <LiquidGlassHeader
+          title="Vision Training"
+          onBack={() => navigation.goBack()}
+          style={styles.headerCard}
+        />
 
         <GlassCard style={styles.card}>
           <Text style={styles.cardLabel}>Target Emotion</Text>
@@ -173,15 +176,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 18,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: 'white',
+  headerCard: {
+    marginBottom: 8,
   },
   card: {
     alignItems: 'center',
@@ -190,53 +186,69 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   targetEmotion: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#facc15',
+    color: AURA_COLORS.accent,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
   },
   detectedEmotion: {
     fontSize: 26,
     fontWeight: '700',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   confidenceText: {
     color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   feedbackText: {
-    color: '#22c55e',
+    color: AURA_COLORS.success,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   scoreText: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#38bdf8',
+    color: AURA_COLORS.primary,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   trainingButton: {
     marginTop: 8,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 18,
-    backgroundColor: '#2563eb',
+    backgroundColor: AURA_COLORS.primary,
   },
   trainingButtonActive: {
-    backgroundColor: '#ef4444',
+    backgroundColor: AURA_COLORS.dangerDark,
   },
   trainingButtonText: {
     color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   nextButton: {
     marginTop: 6,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: AURA_COLORS.accentSoft,
   },
   nextButtonText: {
     color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   centerContent: {
     flex: 1,
@@ -245,6 +257,8 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   backButton: {
     marginTop: 20,
@@ -256,5 +270,7 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
 });

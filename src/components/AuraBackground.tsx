@@ -8,6 +8,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS } from '../theme/colors';
 
 export default function AuraBackground() {
   const progress = useSharedValue(0);
@@ -27,9 +28,23 @@ export default function AuraBackground() {
   return (
     <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
       <LinearGradient
-        colors={['#1a1a2e', '#0f3460', '#16213e', '#1a1a2e']}
+        colors={['#0b0f1a', '#12183b', '#1b1f46', '#0b0f1a']}
         locations={[0, 0.3, 0.7, 1]}
         style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={[`${AURA_COLORS.primary}55`, 'rgba(11, 15, 26, 0)']}
+        start={{ x: 0.1, y: 0.1 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={[`${AURA_COLORS.secondary}33`, 'rgba(11, 15, 26, 0)']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
       />
     </Animated.View>
   );

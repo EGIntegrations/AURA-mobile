@@ -1,6 +1,8 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 interface Props {
   title: string;
@@ -22,13 +24,13 @@ export default function GlassButton({
   const getColors = () => {
     switch (style) {
       case 'primary':
-        return ['#0ea5e9', '#0284c7'];
+        return AURA_COLORS.gradients.primary;
       case 'secondary':
         return ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)'];
       case 'danger':
-        return ['#ef4444', '#dc2626'];
+        return AURA_COLORS.gradients.danger;
       default:
-        return ['#0ea5e9', '#0284c7'];
+        return AURA_COLORS.gradients.primary;
     }
   };
 
@@ -58,16 +60,18 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 16,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   text: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
   },
   disabled: {
     opacity: 0.5,

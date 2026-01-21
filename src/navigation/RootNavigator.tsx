@@ -15,6 +15,9 @@ import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import APIKeyConfigScreen from '../screens/APIKeyConfigScreen';
 import VoiceCommandScreen from '../screens/VoiceCommandScreen';
 import VisionTrainingScreen from '../screens/VisionTrainingScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 const Stack = createNativeStackNavigator();
 
@@ -50,7 +53,7 @@ export default function RootNavigator() {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#00D4FF" />
+        <ActivityIndicator size="large" color={AURA_COLORS.accent} />
         <Text style={styles.loadingText}>Loading AURA...</Text>
       </View>
     );
@@ -108,6 +111,11 @@ export default function RootNavigator() {
             component={VisionTrainingScreen}
             options={{ presentation: 'fullScreenModal' }}
           />
+          <Stack.Screen
+            name="Settings"
+            component={SettingsScreen}
+            options={{ presentation: 'modal' }}
+          />
         </>
       )}
     </Stack.Navigator>
@@ -119,29 +127,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0b0f1a',
     padding: 20,
   },
   loadingText: {
     color: '#fff',
     fontSize: 16,
     marginTop: 20,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   errorTitle: {
-    color: '#FF4444',
+    color: AURA_COLORS.dangerDark,
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   errorMessage: {
     color: '#fff',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 20,
+    fontFamily: AURA_FONTS.body,
   },
   errorHint: {
     color: '#888',
     fontSize: 12,
     fontStyle: 'italic',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
 });

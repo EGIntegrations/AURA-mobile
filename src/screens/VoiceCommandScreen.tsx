@@ -12,6 +12,9 @@ import Voice from '@react-native-voice/voice';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
+import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 interface CommandDefinition {
   label: string;
@@ -123,13 +126,11 @@ export default function VoiceCommandScreen({ navigation }: any) {
       <AuraBackground />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Voice Commands</Text>
-          <View style={{ width: 60 }} />
-        </View>
+        <LiquidGlassHeader
+          title="Voice Commands"
+          onBack={() => navigation.goBack()}
+          style={styles.headerCard}
+        />
 
         <GlassCard>
           <View style={styles.instructions}>
@@ -189,20 +190,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 20,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  headerCard: {
+    marginBottom: 4,
   },
   instructions: {
     gap: 8,
@@ -211,9 +200,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   commandHint: {
     color: 'rgba(255, 255, 255, 0.8)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   listeningCard: {
     alignItems: 'center',
@@ -222,16 +215,22 @@ const styles = StyleSheet.create({
   listeningLabel: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 14,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   transcriptText: {
     color: 'white',
     fontSize: 18,
     textAlign: 'center',
     minHeight: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   lastCommand: {
-    color: '#22c55e',
+    color: AURA_COLORS.success,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   listenButton: {
     alignSelf: 'stretch',
@@ -241,6 +240,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   quickGrid: {
     flexDirection: 'row',
@@ -248,14 +249,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   quickButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: AURA_COLORS.accentSoft,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(126, 208, 255, 0.45)',
   },
   quickButtonText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
 });

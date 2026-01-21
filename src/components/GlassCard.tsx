@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS } from '../theme/colors';
 
 interface Props {
   children: React.ReactNode;
@@ -11,20 +13,28 @@ interface Props {
 
 export default function GlassCard({
   children,
-  cornerRadius = 24,
+  cornerRadius = 12,
   padding = 24,
   style,
 }: Props) {
+  const snappedRadius = Math.max(6, Math.round(cornerRadius / 4) * 4);
   return (
     <BlurView
-      intensity={20}
+      intensity={25}
       tint="dark"
       style={[
         styles.container,
-        { borderRadius: cornerRadius, padding },
+        { borderRadius: snappedRadius, padding },
         style,
       ]}
     >
+      <LinearGradient
+        colors={AURA_COLORS.gradients.subtleGlass}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <View style={styles.overlay}>{children}</View>
     </BlurView>
   );
@@ -33,11 +43,16 @@ export default function GlassCard({
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: AURA_COLORS.glass.base,
+    borderWidth: 2,
+    borderColor: AURA_COLORS.glass.border,
+    shadowColor: '#0a0f2b',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   },
   overlay: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: AURA_COLORS.glass.overlay,
   },
 });

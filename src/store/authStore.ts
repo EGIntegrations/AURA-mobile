@@ -43,7 +43,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const user = await AuthenticationService.signIn(username, password);
-      await BiometricService.saveUsername(user.username);
+      if (await BiometricService.isEnabled()) {
+        await BiometricService.saveUsername(user.username);
+      }
       set({ currentUser: user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       const errorMessage = (error as Error).message;
@@ -73,7 +75,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         role,
         password
       );
-      await BiometricService.saveUsername(user.username);
+      if (await BiometricService.isEnabled()) {
+        await BiometricService.saveUsername(user.username);
+      }
       set({ currentUser: user, isAuthenticated: true, isLoading: false });
     } catch (error) {
       const errorMessage = (error as Error).message;

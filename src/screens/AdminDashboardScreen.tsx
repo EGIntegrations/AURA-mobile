@@ -16,6 +16,9 @@ import { User, UserRole } from '../types';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
+import { AURA_COLORS } from '../theme/colors';
+import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_FONTS } from '../theme/typography';
 
 type TabType = 'overview' | 'learners' | 'progress' | 'settings';
 
@@ -130,13 +133,11 @@ ${supervisedUsers.map((user) => `- ${user.displayName} (Level ${user.progress.cu
 
       <View style={styles.content}>
         {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Admin Dashboard</Text>
-          <View style={{ width: 60 }} />
-        </View>
+        <LiquidGlassHeader
+          title="Admin Dashboard"
+          onBack={() => navigation.goBack()}
+          style={styles.headerCard}
+        />
 
         {/* Tabs */}
         <View style={styles.tabsContainer}>
@@ -440,6 +441,8 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   backButton: {
     fontSize: 16,
@@ -450,22 +453,16 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   content: {
     flex: 1,
     paddingTop: 60,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  headerCard: {
+    marginHorizontal: 24,
+    marginBottom: 16,
   },
   tabsContainer: {
     paddingHorizontal: 24,
@@ -482,12 +479,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   tabActive: {
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    backgroundColor: AURA_COLORS.accentSoft,
   },
   tabText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   tabTextActive: {
     color: 'white',
@@ -507,6 +506,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
     marginBottom: 16,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   statsRow: {
     flexDirection: 'row',
@@ -523,11 +524,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   statLabel: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     marginTop: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   actionsRow: {
     gap: 12,
@@ -537,11 +542,15 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     paddingVertical: 20,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   placeholderText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.6)',
     fontStyle: 'italic',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   addButton: {
     marginBottom: 8,
@@ -555,7 +564,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    backgroundColor: AURA_COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -563,6 +572,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   learnerInfo: {
     flex: 1,
@@ -571,17 +582,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   learnerRole: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     marginTop: 2,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   learnerMetrics: {
     gap: 6,
   },
   metricChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: AURA_COLORS.accentSoft,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -590,6 +605,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   winsContainer: {
     gap: 12,
@@ -605,14 +622,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   winScore: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   winAccuracy: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   settingRow: {
     flexDirection: 'row',
@@ -626,16 +649,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'white',
     flex: 1,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   settingStatus: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.6)',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   aboutText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.75)',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   modalOverlay: {
     flex: 1,
@@ -651,14 +680,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   modalInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    backgroundColor: 'rgba(91, 124, 255, 0.22)',
     borderRadius: 16,
     padding: 14,
     color: 'white',
     marginBottom: 16,
     fontSize: 16,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -667,14 +700,14 @@ const styles = StyleSheet.create({
   },
   modalButtonPrimary: {
     flex: 1,
-    backgroundColor: '#3b82f6',
+    backgroundColor: AURA_COLORS.primary,
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
   },
   modalButtonSecondary: {
     flex: 1,
-    backgroundColor: 'rgba(156, 163, 175, 0.3)',
+    backgroundColor: 'rgba(91, 124, 255, 0.18)',
     paddingVertical: 14,
     borderRadius: 16,
     alignItems: 'center',
@@ -683,10 +716,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   modalButtonTextSecondary: {
     color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
 });

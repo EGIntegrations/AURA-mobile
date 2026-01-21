@@ -7,13 +7,15 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
-  Platform,
 } from 'react-native';
 import { APIKeyService } from '../services/APIKeyService';
 import { BackendClient } from '../services/BackendClient';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
+import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 export default function APIKeyConfigScreen({ navigation }: any) {
   const backendEnabled = BackendClient.isConfigured();
@@ -103,13 +105,11 @@ export default function APIKeyConfigScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.backButton}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>API Configuration</Text>
-            <View style={{ width: 60 }} />
-          </View>
+          <LiquidGlassHeader
+            title="API Configuration"
+            onBack={() => navigation.goBack()}
+            style={styles.headerCard}
+          />
 
           {/* Info Card */}
           <GlassCard>
@@ -264,20 +264,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 24,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  headerCard: {
+    marginBottom: 4,
   },
   infoCard: {
     alignItems: 'center',
@@ -290,23 +278,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   infoText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.75)',
     textAlign: 'center',
     lineHeight: 20,
+    fontFamily: AURA_FONTS.body,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: 'white',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   sectionDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.75)',
     marginBottom: 16,
+    fontFamily: AURA_FONTS.body,
   },
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.14)',
@@ -314,7 +308,8 @@ const styles = StyleSheet.create({
     padding: 14,
     color: 'white',
     fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   clearButton: {
     marginTop: 8,
@@ -324,6 +319,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.6)',
     textDecorationLine: 'underline',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   saveButton: {
     marginTop: 8,
@@ -338,11 +335,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     marginBottom: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   linkText: {
     fontSize: 12,
-    color: '#60a5fa',
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    color: AURA_COLORS.accent,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   statusRow: {
     flexDirection: 'row',
@@ -355,38 +355,45 @@ const styles = StyleSheet.create({
   statusLabel: {
     fontSize: 14,
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   statusValue: {
     fontSize: 14,
-    color: '#ef4444',
+    color: AURA_COLORS.dangerDark,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   statusActive: {
-    color: '#10b981',
+    color: AURA_COLORS.success,
   },
   deleteButton: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: 'rgba(248, 113, 113, 0.2)',
     padding: 14,
     borderRadius: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
+    borderColor: 'rgba(248, 113, 113, 0.45)',
   },
   deleteButtonText: {
-    color: '#ef4444',
+    color: AURA_COLORS.dangerDark,
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   helpContainer: {
     padding: 16,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    backgroundColor: 'rgba(91, 124, 255, 0.16)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+    borderColor: 'rgba(91, 124, 255, 0.35)',
   },
   helpText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)',
     lineHeight: 20,
+    fontFamily: AURA_FONTS.body,
   },
 });

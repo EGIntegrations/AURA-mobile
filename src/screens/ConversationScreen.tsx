@@ -8,7 +8,10 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
+import { Audio } from 'expo-av';
+import Voice from '@react-native-voice/voice';
 import { useAuthStore } from '../store/authStore';
 import { ProgressionService } from '../services/ProgressionService';
 import {
@@ -20,12 +23,19 @@ import {
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { ConversationSummary } from '../types';
+import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 export default function ConversationScreen({ navigation }: any) {
   const { currentUser, updateUserProgress } = useAuthStore();
   const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
+  const [modePickerScenario, setModePickerScenario] = useState<ConversationScenario | null>(null);
+  const [conversationMode, setConversationMode] = useState<'text' | 'talk'>('text');
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [speechTranscript, setSpeechTranscript] = useState('');
+  const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [duration, setDuration] = useState(0);
   const conversationService = useRef(new ConversationService());
@@ -40,12 +50,28 @@ export default function ConversationScreen({ navigation }: any) {
     return () => clearInterval(interval);
   }, []);
 
-  const handleScenarioSelect = async (scenario: ConversationScenario) => {
+  useEffect(() => {
+    const setupVoice = async () => {
+      Voice.onSpeechResults = handleSpeechResults;
+      Voice.onSpeechError = handleSpeechError;
+      await Audio.requestPermissionsAsync();
+    };
+
+    setupVoice();
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  const startScenario = async (scenario: ConversationScenario, mode: 'text' | 'talk') => {
     setSelectedScenario(scenario);
+    setConversationMode(mode);
     setMessages([]);
+    setInputText('');
+    setSpeechTranscript('');
+    setIsListening(false);
     startTimeRef.current = Date.now();
 
-    // Start conversation
     const openingMessage = await conversationService.current.startConversation(scenario);
     setMessages([openingMessage]);
 
@@ -54,15 +80,31 @@ export default function ConversationScreen({ navigation }: any) {
     }, 100);
   };
 
-  const handleSendMessage = async () => {
-    if (!inputText.trim() || isLoading) return;
+  const handleScenarioSelect = async (scenario: ConversationScenario) => {
+    if (scenario.topic === 'social_greeting') {
+      setModePickerScenario(scenario);
+      return;
+    }
+    await startScenario(scenario, 'text');
+  };
 
-    const userText = inputText.trim();
+  const handleModeSelect = async (mode: 'text' | 'talk') => {
+    if (!modePickerScenario) return;
+    const scenario = modePickerScenario;
+    setModePickerScenario(null);
+    await startScenario(scenario, mode);
+  };
+
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || isLoading) return;
+
+    const userText = text.trim();
     setInputText('');
+    setSpeechTranscript('');
     setIsLoading(true);
 
     try {
-      const assistantMessage = await conversationService.current.processUserMessage(userText);
+      await conversationService.current.processUserMessage(userText);
       const updatedMessages = conversationService.current.getMessages();
       setMessages([...updatedMessages]);
 
@@ -76,8 +118,51 @@ export default function ConversationScreen({ navigation }: any) {
     }
   };
 
+  const handleSendMessage = async () => {
+    await sendMessage(inputText);
+  };
+
+  const handleSpeechResults = (event: any) => {
+    if (event.value && event.value[0]) {
+      const text = event.value[0];
+      setSpeechTranscript(text);
+      stopListening();
+      sendMessage(text);
+    }
+  };
+
+  const handleSpeechError = (event: any) => {
+    console.error('Conversation speech error:', event);
+    setIsListening(false);
+  };
+
+  const startListening = async () => {
+    try {
+      setSpeechTranscript('');
+      setIsListening(true);
+      await Voice.start('en-US');
+    } catch (error) {
+      console.error('Start listening error:', error);
+      setIsListening(false);
+    }
+  };
+
+  const stopListening = async () => {
+    try {
+      await Voice.stop();
+    } catch (error) {
+      console.error('Stop listening error:', error);
+    } finally {
+      setIsListening(false);
+    }
+  };
+
   const handleEndConversation = async () => {
     if (!currentUser || !selectedScenario) return;
+
+    if (isListening) {
+      await stopListening();
+    }
 
     const summary = await conversationService.current.endConversation();
 
@@ -111,11 +196,10 @@ export default function ConversationScreen({ navigation }: any) {
 
         <View style={styles.scenarioSelectionContainer}>
           <View style={styles.scenarioHeader}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.backButton}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.scenarioTitle}>Choose a Scenario</Text>
-            <View style={{ width: 60 }} />
+            <LiquidGlassHeader
+              title="Choose a Scenario"
+              onBack={() => navigation.goBack()}
+            />
           </View>
 
           <ScrollView
@@ -136,6 +220,29 @@ export default function ConversationScreen({ navigation }: any) {
             ))}
           </ScrollView>
         </View>
+
+        <Modal visible={!!modePickerScenario} transparent animationType="fade">
+          <View style={styles.modeOverlay}>
+            <GlassCard style={styles.modeCard}>
+              <Text style={styles.modeTitle}>Social Greeting</Text>
+              <Text style={styles.modeSubtitle}>Choose how you want to practice.</Text>
+              <View style={styles.modeButtons}>
+                <TouchableOpacity
+                  style={styles.modeButtonPrimary}
+                  onPress={() => handleModeSelect('talk')}
+                >
+                  <Text style={styles.modeButtonText}>Talk It Out</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modeButtonSecondary}
+                  onPress={() => handleModeSelect('text')}
+                >
+                  <Text style={styles.modeButtonTextSecondary}>Text Messages</Text>
+                </TouchableOpacity>
+              </View>
+            </GlassCard>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -175,44 +282,64 @@ export default function ConversationScreen({ navigation }: any) {
 
         {/* Input */}
         <View style={styles.inputContainer}>
-          <GlassCard cornerRadius={24} padding={0}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder="Type your response..."
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                value={inputText}
-                onChangeText={setInputText}
-                multiline
-                maxLength={500}
-              />
-              <TouchableOpacity
-                style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-                onPress={handleSendMessage}
-                disabled={!inputText.trim() || isLoading}
-              >
-                <Text style={styles.sendButtonText}>✈</Text>
-              </TouchableOpacity>
-            </View>
-          </GlassCard>
-
-          {/* Quick Responses */}
-          {selectedScenario.quickResponses.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.quickResponsesScroll}
-            >
-              {selectedScenario.quickResponses.map((response, index) => (
+          {conversationMode === 'talk' ? (
+            <GlassCard cornerRadius={24} padding={20}>
+              <View style={styles.talkContainer}>
+                <Text style={styles.talkLabel}>
+                  {isListening ? 'Listening…' : 'Tap the mic and speak your response'}
+                </Text>
+                <Text style={styles.talkTranscript}>{speechTranscript || 'Say hello...'}</Text>
                 <TouchableOpacity
-                  key={index}
-                  style={styles.quickResponseChip}
-                  onPress={() => setInputText(response)}
+                  style={[styles.micButton, isListening && styles.micButtonActive]}
+                  onPress={isListening ? stopListening : startListening}
+                  disabled={isLoading}
                 >
-                  <Text style={styles.quickResponseText}>{response}</Text>
+                  <Text style={styles.micButtonText}>{isListening ? '■' : '🎤'}</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              </View>
+            </GlassCard>
+          ) : (
+            <>
+              <GlassCard cornerRadius={24} padding={0}>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Type your response..."
+                    placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                    value={inputText}
+                    onChangeText={setInputText}
+                    multiline
+                    maxLength={500}
+                  />
+                  <TouchableOpacity
+                    style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+                    onPress={handleSendMessage}
+                    disabled={!inputText.trim() || isLoading}
+                  >
+                    <Text style={styles.sendButtonText}>✈</Text>
+                  </TouchableOpacity>
+                </View>
+              </GlassCard>
+
+              {/* Quick Responses */}
+              {selectedScenario.quickResponses.length > 0 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.quickResponsesScroll}
+                >
+                  {selectedScenario.quickResponses.map((response, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.quickResponseChip}
+                      onPress={() => setInputText(response)}
+                    >
+                      <Text style={styles.quickResponseText}>{response}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </>
           )}
         </View>
       </View>
@@ -251,22 +378,64 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 80,
   },
-  scenarioHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  modeOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modeCard: {
+    padding: 24,
+  },
+  modeTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
+  },
+  modeSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.75)',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
+  },
+  modeButtons: {
+    gap: 12,
+  },
+  modeButtonPrimary: {
+    backgroundColor: AURA_COLORS.primary,
+    paddingVertical: 14,
+    borderRadius: 16,
     alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 32,
   },
-  backButton: {
+  modeButtonSecondary: {
+    backgroundColor: AURA_COLORS.accentSoft,
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  modeButtonText: {
+    color: 'white',
     fontSize: 16,
-    color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
-  scenarioTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  modeButtonTextSecondary: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
+  },
+  scenarioHeader: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
   scenarioScroll: {
     paddingHorizontal: 24,
@@ -274,27 +443,33 @@ const styles = StyleSheet.create({
   },
   scenarioCard: {
     width: 280,
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    backgroundColor: 'rgba(91, 124, 255, 0.22)',
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderColor: AURA_COLORS.glass.border,
   },
   scenarioCardTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   scenarioCardDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)',
     marginBottom: 16,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   scenarioCardLevel: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   conversationContainer: {
     flex: 1,
@@ -311,6 +486,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
   },
   headerInfo: {
     flex: 1,
@@ -320,11 +496,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     marginTop: 2,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   messagesContainer: {
     flex: 1,
@@ -342,7 +522,7 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    backgroundColor: 'rgba(91, 124, 255, 0.35)',
     borderBottomRightRadius: 4,
   },
   assistantBubble: {
@@ -355,11 +535,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   messageText: {
     fontSize: 16,
     color: 'white',
     lineHeight: 22,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   emotionalTone: {
     fontSize: 12,
@@ -370,6 +554,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     gap: 12,
+  },
+  talkContainer: {
+    alignItems: 'center',
+    gap: 12,
+  },
+  talkLabel: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    textAlign: 'center',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
+  },
+  talkTranscript: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    minHeight: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
+  },
+  micButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(34, 211, 238, 0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 211, 238, 0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  micButtonActive: {
+    backgroundColor: 'rgba(248, 113, 113, 0.7)',
+    borderColor: 'rgba(248, 113, 113, 0.85)',
+  },
+  micButtonText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '700',
+    fontFamily: AURA_FONTS.pixel,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -382,12 +606,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     maxHeight: 100,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    backgroundColor: AURA_COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -397,22 +623,25 @@ const styles = StyleSheet.create({
   sendButtonText: {
     fontSize: 18,
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
   },
   quickResponsesScroll: {
     maxHeight: 50,
   },
   quickResponseChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: AURA_COLORS.accentSoft,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: 'rgba(126, 208, 255, 0.5)',
   },
   quickResponseText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '500',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
 });

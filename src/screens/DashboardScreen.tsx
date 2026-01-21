@@ -12,6 +12,8 @@ import { UserRole } from '../types';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 export default function DashboardScreen({ navigation }: any) {
   const { currentUser, signOut } = useAuthStore();
@@ -78,49 +80,42 @@ export default function DashboardScreen({ navigation }: any) {
               title="Emotion Recognition"
               subtitle="Practice identifying expressions"
               icon="😊"
-              gradient={['#3b82f6', '#8b5cf6']}
+              gradient={AURA_COLORS.gradients.primary}
               onPress={() => navigateTo('Game')}
             />
             <FeatureTile
               title="Speech Practice"
               subtitle="Say the emotions you see"
               icon="🎤"
-              gradient={['#10b981', '#14b8a6']}
+              gradient={AURA_COLORS.gradients.secondary}
               onPress={() => navigateTo('SpeechPractice')}
             />
             <FeatureTile
               title="Facial Mimicry"
               subtitle="Practice making expressions"
               icon="📸"
-              gradient={['#f97316', '#ec4899']}
+              gradient={['#2d3a7f', '#5b7cff']}
               onPress={() => navigateTo('Mimicry')}
             />
             <FeatureTile
               title="Vision Training"
               subtitle="Live emotion feedback"
               icon="🧠"
-              gradient={['#f59e0b', '#f97316']}
+              gradient={['#3f5fd6', '#7ed0ff']}
               onPress={() => navigateTo('VisionTraining')}
-            />
-            <FeatureTile
-              title="Voice Commands"
-              subtitle="Control AURA hands-free"
-              icon="🗣️"
-              gradient={['#0ea5e9', '#6366f1']}
-              onPress={() => navigateTo('VoiceCommands')}
             />
             <FeatureTile
               title="AI Conversation"
               subtitle="Simulate real conversations"
               icon="💬"
-              gradient={['#8b5cf6', '#6366f1']}
+              gradient={['#3a2b7a', '#a37bff']}
               onPress={() => navigateTo('Conversation')}
             />
             <FeatureTile
               title="My Progress"
               subtitle="Review mastery & insights"
               icon="📊"
-              gradient={['#6b7280', '#3b82f6']}
+              gradient={['#5b7cff', '#a37bff']}
               onPress={() => navigateTo('Progress')}
             />
             {canViewAdmin && (
@@ -128,7 +123,7 @@ export default function DashboardScreen({ navigation }: any) {
                 title="Admin Dashboard"
                 subtitle="Manage learners & reports"
                 icon="🧭"
-                gradient={['#1f2937', '#4b5563']}
+                gradient={['#2a2f5a', '#5b7cff']}
                 onPress={() => navigateTo('AdminDashboard')}
               />
             )}
@@ -136,8 +131,15 @@ export default function DashboardScreen({ navigation }: any) {
               title="API Keys"
               subtitle="Configure AI services"
               icon="🔐"
-              gradient={['#111827', '#1f2937']}
+              gradient={['#23284d', '#7ed0ff']}
               onPress={() => navigateTo('APIKeyConfig')}
+            />
+            <FeatureTile
+              title="Settings"
+              subtitle="Preferences & access"
+              icon="⚙️"
+              gradient={['#5b7cff', '#7ed0ff']}
+              onPress={() => navigateTo('Settings')}
             />
           </View>
 
@@ -238,11 +240,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 1.2,
   },
   subtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.84)',
     textAlign: 'center',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   progressCard: {
     marginBottom: 24,
@@ -255,14 +261,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   progressLabel: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
     color: 'white',
     marginBottom: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
   },
   progressSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   tilesContainer: {
     gap: 16,
@@ -298,10 +308,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 2,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   tileSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.84)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   chevron: {
     fontSize: 28,
@@ -324,10 +338,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
     marginBottom: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   statTitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   divider: {
     width: 1,
@@ -340,8 +358,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   signOutText: {
-    color: '#ef4444',
+    color: AURA_COLORS.dangerDark,
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
 });

@@ -9,12 +9,15 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../store/authStore';
 import { BiometricService } from '../services/BiometricService';
 import { UserRole } from '../types';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 export default function AuthenticationScreen() {
   const { signIn, signUp, signInWithBiometric, isLoading, error } = useAuthStore();
@@ -36,11 +39,12 @@ export default function AuthenticationScreen() {
       try {
         const canAuth = await BiometricService.canAuthenticate();
         const savedUsername = await BiometricService.getSavedUsername();
+        const enabled = await BiometricService.isEnabled();
         const type = await BiometricService.getBiometricType();
         const label =
           type === 'faceId' ? 'Face ID' : type === 'touchId' || type === 'fingerprint' ? 'Touch ID' : 'Biometric';
 
-        setShowBiometric(canAuth && !!savedUsername);
+        setShowBiometric(canAuth && enabled && !!savedUsername);
         setBiometricLabel(label);
       } catch (err) {
         setShowBiometric(false);
@@ -71,6 +75,20 @@ export default function AuthenticationScreen() {
   return (
     <View style={styles.container}>
       <AuraBackground />
+      <LinearGradient
+        colors={['rgba(91, 124, 255, 0.35)', 'rgba(12, 18, 28, 0)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.topGlow}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['rgba(163, 123, 255, 0.3)', 'rgba(12, 18, 28, 0)']}
+        start={{ x: 1, y: 1 }}
+        end={{ x: 0, y: 0 }}
+        style={styles.bottomGlow}
+        pointerEvents="none"
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -86,7 +104,15 @@ export default function AuthenticationScreen() {
               Autism Understanding & Recognition Assistant
             </Text>
 
-            <GlassCard style={styles.card}>
+            <View style={styles.cardWrap}>
+              <LinearGradient
+                colors={['rgba(91, 124, 255, 0.35)', 'rgba(163, 123, 255, 0.25)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cardGlow}
+                pointerEvents="none"
+              />
+              <GlassCard style={styles.card}>
               <View style={styles.segmentControl}>
                 <TouchableOpacity
                   onPress={() => setIsSignUp(false)}
@@ -202,7 +228,8 @@ export default function AuthenticationScreen() {
               )}
 
               {error && <Text style={styles.error}>{error}</Text>}
-            </GlassCard>
+              </GlassCard>
+            </View>
 
             {showDemoLogins && (
               <View style={styles.demoContainer}>
@@ -231,6 +258,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  topGlow: {
+    position: 'absolute',
+    top: -80,
+    left: -60,
+    width: 260,
+    height: 260,
+    borderRadius: 160,
+    opacity: 0.9,
+  },
+  bottomGlow: {
+    position: 'absolute',
+    bottom: -120,
+    right: -80,
+    width: 300,
+    height: 300,
+    borderRadius: 180,
+    opacity: 0.85,
+  },
   keyboardView: {
     flex: 1,
   },
@@ -249,15 +294,32 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 1.4,
   },
   subtitle: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
     marginBottom: 32,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
+  },
+  cardWrap: {
+    marginBottom: 24,
+  },
+  cardGlow: {
+    position: 'absolute',
+    top: -14,
+    left: -14,
+    right: -14,
+    bottom: -14,
+    borderRadius: 28,
+    opacity: 0.7,
   },
   card: {
-    marginBottom: 24,
+    backgroundColor: 'rgba(12, 18, 28, 0.75)',
+    borderColor: AURA_COLORS.glass.border,
   },
   segmentControl: {
     flexDirection: 'row',
@@ -273,19 +335,23 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   segmentActive: {
     color: 'white',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(91, 124, 255, 0.35)',
     borderRadius: 12,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    backgroundColor: 'rgba(91, 124, 255, 0.18)',
     borderRadius: 16,
     padding: 14,
     color: 'white',
     marginBottom: 16,
     fontSize: 16,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   signInButton: {
     marginTop: 8,
@@ -294,9 +360,10 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   error: {
-    color: '#ff4444',
+    color: AURA_COLORS.dangerDark,
     marginTop: 12,
     textAlign: 'center',
+    fontFamily: AURA_FONTS.pixel,
   },
   roleRow: {
     flexDirection: 'row',
@@ -318,6 +385,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'capitalize',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   roleChipTextActive: {
     color: 'white',
@@ -330,6 +399,8 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.75)',
     fontSize: 12,
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   demoChips: {
     flexDirection: 'row',
@@ -345,5 +416,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
 });

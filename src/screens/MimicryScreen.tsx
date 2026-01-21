@@ -7,7 +7,8 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
+import { Camera, CameraView } from 'expo-camera';
+import type { CameraType } from 'expo-camera';
 import { useAuthStore } from '../store/authStore';
 import { ImageDatasetService } from '../services/ImageDatasetService';
 import { AudioService } from '../services/AudioService';
@@ -17,6 +18,8 @@ import { UserMonitoringService } from '../services/UserMonitoringService';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { MimicrySession } from '../types';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 const EMOTIONS = ['Happy', 'Sad', 'Angry', 'Surprised', 'Fear', 'Neutral'];
 const MAX_ROUNDS = 5;
@@ -35,8 +38,9 @@ export default function MimicryScreen({ navigation }: any) {
   const [cumulativeConfidence, setCumulativeConfidence] = useState(0);
   const [successfulRounds, setSuccessfulRounds] = useState(0);
   const [referenceImage, setReferenceImage] = useState<string | undefined>();
-  const cameraRef = useRef<Camera>(null);
+  const cameraRef = useRef<CameraView>(null);
   const recognitionInterval = useRef<NodeJS.Timeout | null>(null);
+  const cameraFacing: CameraType = 'front';
 
   useEffect(() => {
     requestPermissions();
@@ -212,10 +216,10 @@ export default function MimicryScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <Camera
+      <CameraView
         ref={cameraRef}
         style={StyleSheet.absoluteFill}
-        type={CameraType.front}
+        facing={cameraFacing}
       />
 
       <View style={styles.overlay}>
@@ -338,6 +342,8 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   backButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
@@ -349,6 +355,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   overlay: {
     flex: 1,
@@ -372,6 +380,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   scoreCard: {
     padding: 12,
@@ -384,11 +394,15 @@ const styles = StyleSheet.create({
   scoreLabel: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   scoreValue: {
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   divider: {
     width: 1,
@@ -407,6 +421,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   referenceImage: {
     width: 200,
@@ -420,6 +436,8 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
   },
   detectionContainer: {
     paddingHorizontal: 24,
@@ -431,6 +449,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   confidenceBar: {
     height: 8,
@@ -445,6 +465,8 @@ const styles = StyleSheet.create({
   confidenceText: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   controls: {
     flexDirection: 'row',
@@ -458,22 +480,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   controlButtonStart: {
-    backgroundColor: 'rgba(16, 185, 129, 0.85)',
+    backgroundColor: AURA_COLORS.primary,
   },
   controlButtonStop: {
-    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+    backgroundColor: AURA_COLORS.dangerDark,
   },
   controlButtonNext: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 22,
     alignItems: 'center',
-    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+    backgroundColor: AURA_COLORS.secondary,
   },
   controlButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   successOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -487,7 +511,7 @@ const styles = StyleSheet.create({
   },
   successIcon: {
     fontSize: 80,
-    color: '#10b981',
+    color: AURA_COLORS.accent,
     marginBottom: 16,
   },
   successTitle: {
@@ -495,15 +519,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
   },
   successSubtitle: {
     fontSize: 18,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     marginBottom: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   continueButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: AURA_COLORS.primary,
     paddingHorizontal: 40,
     paddingVertical: 16,
     borderRadius: 12,
@@ -512,5 +540,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
 });

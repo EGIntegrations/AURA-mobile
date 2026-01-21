@@ -4,12 +4,14 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
 } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { ALL_EMOTIONS } from '../types';
+import { AURA_COLORS } from '../theme/colors';
+import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_FONTS } from '../theme/typography';
 
 export default function ProgressScreen({ navigation }: any) {
   const { currentUser } = useAuthStore();
@@ -37,13 +39,11 @@ export default function ProgressScreen({ navigation }: any) {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.backButton}>← Back</Text>
-            </TouchableOpacity>
-            <Text style={styles.title}>My Progress</Text>
-            <View style={{ width: 60 }} />
-          </View>
+          <LiquidGlassHeader
+            title="My Progress"
+            onBack={() => navigation.goBack()}
+            style={styles.headerCard}
+          />
 
           {/* Level Card */}
           <GlassCard cornerRadius={30}>
@@ -186,20 +186,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     gap: 24,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+  headerCard: {
+    marginBottom: 8,
   },
   levelCard: {
     alignItems: 'center',
@@ -209,10 +197,14 @@ const styles = StyleSheet.create({
     fontSize: 72,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 1.2,
   },
   levelLabel: {
     fontSize: 18,
     color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   levelProgressBar: {
     width: '100%',
@@ -224,15 +216,19 @@ const styles = StyleSheet.create({
   },
   levelProgressFill: {
     height: '100%',
-    backgroundColor: '#3b82f6',
+    backgroundColor: AURA_COLORS.primary,
   },
   levelProgressText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   totalXp: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -249,10 +245,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   statLabel: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   medalSection: {
     gap: 16,
@@ -261,6 +261,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   medalDisplay: {
     alignItems: 'center',
@@ -272,10 +274,14 @@ const styles = StyleSheet.create({
   medalName: {
     fontSize: 24,
     fontWeight: 'bold',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
   },
   medalDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   emotionSection: {
     gap: 16,
@@ -297,14 +303,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    backgroundColor: AURA_COLORS.accentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    borderColor: AURA_COLORS.accent,
   },
   achievementText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   emotionCard: {
     width: '47%',
@@ -324,10 +332,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   emotionStatus: {
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.7)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   sessionsSection: {
     gap: 16,
@@ -344,11 +356,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   sessionDate: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   sessionStats: {
     alignItems: 'flex-end',
@@ -356,11 +372,15 @@ const styles = StyleSheet.create({
   sessionStat: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   emptyText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     paddingVertical: 20,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
 });

@@ -17,6 +17,8 @@ import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { ALL_EMOTIONS, GameQuestion } from '../types';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 const MAX_QUESTIONS = 8;
 const QUESTION_TIME_LIMIT = 25.0;
@@ -209,7 +211,11 @@ export default function GameScreen({ navigation }: any) {
   const timeProgress = timeRemaining / QUESTION_TIME_LIMIT;
 
   const timeBarColor =
-    timeProgress > 0.5 ? '#10b981' : timeProgress > 0.25 ? '#f59e0b' : '#ef4444';
+    timeProgress > 0.5
+      ? AURA_COLORS.accent
+      : timeProgress > 0.25
+      ? AURA_COLORS.secondary
+      : AURA_COLORS.dangerDark;
 
   return (
     <View style={styles.container}>
@@ -343,7 +349,7 @@ export default function GameScreen({ navigation }: any) {
             <View style={styles.summaryButtons}>
               <TouchableOpacity style={styles.summaryButton} onPress={handlePlayAgain}>
                 <LinearGradient
-                  colors={['#3b82f6', '#2563eb']}
+                  colors={AURA_COLORS.gradients.primary}
                   style={styles.summaryButtonGradient}
                 >
                   <Text style={styles.summaryButtonText}>Play Again</Text>
@@ -397,11 +403,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   headerSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     marginTop: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -447,6 +457,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 16,
+    justifyContent: 'center',
+    alignContent: 'center',
+    alignItems: 'center',
   },
   emotionButton: {
     width: '30%',
@@ -459,8 +472,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   emotionButtonSelected: {
-    backgroundColor: 'rgba(59, 130, 246, 0.3)',
-    borderColor: '#3b82f6',
+    backgroundColor: AURA_COLORS.accentSoft,
+    borderColor: AURA_COLORS.accent,
   },
   emotionEmoji: {
     fontSize: 36,
@@ -470,6 +483,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'white',
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   loading: {
     paddingVertical: 34,
@@ -478,6 +493,8 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   exitContainer: {
     position: 'absolute',
@@ -494,6 +511,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   feedbackOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -515,10 +534,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   feedbackSubtitle: {
     fontSize: 18,
     color: 'rgba(255, 255, 255, 0.9)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   modalOverlay: {
     flex: 1,
@@ -535,6 +558,8 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   summaryStats: {
     gap: 16,
@@ -548,11 +573,15 @@ const styles = StyleSheet.create({
   statTitle: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   statValue: {
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   summaryButtons: {
     gap: 12,
@@ -568,16 +597,20 @@ const styles = StyleSheet.create({
   summaryButtonSecondary: {
     paddingVertical: 16,
     alignItems: 'center',
-    backgroundColor: 'rgba(156, 163, 175, 0.3)',
+    backgroundColor: AURA_COLORS.accentSoft,
   },
   summaryButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   summaryButtonTextSecondary: {
     color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 18,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
 });

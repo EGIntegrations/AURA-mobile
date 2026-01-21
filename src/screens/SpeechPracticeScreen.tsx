@@ -19,6 +19,8 @@ import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
 import { GameQuestion, ALL_EMOTIONS, SpeechPracticeResult } from '../types';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
 
 const MAX_PROMPTS = 6;
 
@@ -430,11 +432,15 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
   },
   instructionSubtitle: {
     fontSize: 18,
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   howItWorks: {
     gap: 16,
@@ -443,6 +449,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.9)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   instructionRow: {
     flexDirection: 'row',
@@ -456,6 +464,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   startButton: {
     marginTop: 8,
@@ -467,6 +477,8 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: 'rgba(255, 255, 255, 0.75)',
     fontSize: 16,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   scrollContent: {
     paddingTop: 60,
@@ -484,11 +496,15 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
   },
   headerSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     marginTop: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -500,6 +516,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   progressBar: {
     height: 8,
@@ -509,11 +527,13 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#10b981',
+    backgroundColor: AURA_COLORS.accent,
   },
   progressText: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   questionImage: {
     width: '100%',
@@ -538,6 +558,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: 'rgba(255, 255, 255, 0.9)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   stopButton: {
     marginTop: 8,
@@ -557,11 +579,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     marginBottom: 8,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   transcriptionText: {
     fontSize: 16,
     color: 'white',
     fontWeight: '500',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   fallbackContainer: {
     gap: 16,
@@ -570,11 +596,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
     textAlign: 'center',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   emotionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignContent: 'center',
   },
   emotionButton: {
     width: '30%',
@@ -594,6 +625,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     marginTop: 4,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   exitButton: {
     position: 'absolute',
@@ -608,6 +641,8 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   feedbackOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -628,6 +663,8 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   modalOverlay: {
     flex: 1,
@@ -648,6 +685,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 24,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
   },
   summaryStats: {
     gap: 8,
@@ -657,6 +696,8 @@ const styles = StyleSheet.create({
   summaryStatText: {
     fontSize: 16,
     color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
   summaryButtons: {
     width: '100%',
@@ -665,12 +706,14 @@ const styles = StyleSheet.create({
   doneButton: {
     padding: 16,
     alignItems: 'center',
-    backgroundColor: 'rgba(156, 163, 175, 0.3)',
+    backgroundColor: 'rgba(91, 124, 255, 0.18)',
     borderRadius: 16,
   },
   doneButtonText: {
     color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
   },
 });
