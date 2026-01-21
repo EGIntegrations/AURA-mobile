@@ -1,0 +1,436 @@
+## Investigation Complete - Root Cause Analysis
+
+I've completed a thorough investigation of your AURA app. Here's what I found:
+
+### **ROOT CAUSE IDENTIFIED**
+
+Apple rejected your build because the **Speech.framework is linked** to your app (line 15 & 102 in project.pbxproj), but the required `NSSpeechRecognitionUsageDescription` privacy key is **missing** from Info.plist.
+
+---
+
+## **Detailed Findings**
+
+### **1. Speech Framework Linkage**
+**File:** `AURA.xcodeproj/project.pbxproj`
+- **Line 15:** `9D953DCC2E85EB78004BC24B /* Speech.framework in Frameworks */`
+- **Line 47:** Speech.framework reference
+- **Line 102:** Speech.framework explicitly linked to AURA target
+
+### **2. Active Speech Recognition Usage in Code**
+
+The following files actively use the Speech framework APIs:
+
+**Primary Speech Recognition:**
+- **Services/SiriKitManager.swift:3-35** - Implements full speech recognition:
+  - `SFSpeechRecognizer` (line 20)
+  - `SFSpeechAudioBufferRecognitionRequest` (line 21)
+  - `SFSpeechRecognitionTask` (line 22)
+  - `SFSpeechRecognizer.requestAuthorization` (line 95)
+
+- **Services/ConversationService.swift:3-18** - Uses speech recognition for conversation management
+  - Creates `ConversationSpeechRecognitionManager` (line 18)
+  - Implements `startListening()` with speech recognition (line 55-68)
+
+**Views Using Speech:**
+- **Views/VocabularyWithSpeechView.swift:2** - Imports Speech framework
+- **Views/VocabularyView.swift:2** - Imports Speech framework
+
+**Speech Synthesis Only (doesn't require NSSpeechRecognitionUsageDescription):**
+- Services/AudioManager.swift - `AVSpeechSynthesizer` (text-to-speech only)
+- AI/AITherapyManager.swift - `AVSpeechSynthesizer` (text-to-speech only)
+- Views/TherapyLLM.swift - `AVSpeechSynthesizer` (text-to-speech only)
+
+### **3. Current Info.plist State**
+**File:** `Info.plist`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>AURA uses Face ID or Touch ID so you can sign in securely without retyping passwords.</string>
+</dict>
+</plist>
+```
+
+**MISSING:** `NSSpeechRecognitionUsageDescription`
+
+### **4. Entitlements Analysis**
+**File:** `AutismTrainerApp.entitlements`
+- Contains Siri entitlement: `com.apple.developer.siri` = `true` (line 7-8)
+- This entitlement **can trigger speech recognition requirements** even if you only intend to use Siri Shortcuts
+
+### **5. Target Configuration**
+- **Main app target:** AURA (requires the fix)
+- **Test targets:** AURATests, AURAUITests (typically inherit permissions)
+- Only the main AURA target links Speech.framework
+
+---
+
+## **COMPREHENSIVE REMEDIATION PLAN**
+
+### **Phase 1: Immediate Fix (Critical - Required for App Store Submission)**
+
+#### **Step 1.1: Add Missing Privacy String to Info.plist**
+**Action:** Add `NSSpeechRecognitionUsageDescription` to Info.plist
+
+**Justification:** This is required by Apple whenever Speech.framework is linked or when using `SFSpeechRecognizer` APIs. Your app uses both speech recognition (for voice commands) and the Siri entitlement.
+
+**Edit Info.plist to include:**
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>AURA uses Face ID or Touch ID so you can sign in securely without retyping passwords.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>AURA uses speech recognition to help you practice conversational skills through voice interaction and receive real-time feedback during therapy sessions.</string>
+</dict>
+</plist>
+```
+
+**Recommended description justification:** The description clearly explains the educational/therapeutic use case, which aligns with your app category (Education) and the actual implementation in SiriKitManager and ConversationService.
+
+---
+
+### **Phase 2: Validation & Testing**
+
+#### **Step 2.1: Verify Build Settings**
+**Commands to run:**
+```bash
+# Check Info.plist is correctly referenced
+xcodebuild -showBuildSettings -project AURA.xcodeproj -target AURA | grep INFOPLIST_FILE
+
+# Verify the privacy key is in the built app
+# After building, check:
+# Build/Products/Debug-iphoneos/AURA.app/Info.plist
+```
+
+#### **Step 2.2: Runtime Permission Testing**
+**Test cases:**
+1. Launch app and navigate to vocabulary practice screens
+2. Trigger speech recognition in VocabularyWithSpeechView
+3. Verify proper authorization prompt appears with your custom message
+4. Test conversation practice (ConversationPracticeView)
+5. Verify SiriKitManager authorization flow works
+
+**Expected behavior:**
+- iOS should display permission dialog with your custom message
+- User can grant/deny permission
+- App should handle both scenarios gracefully
+
+#### **Step 2.3: Clean Build & Archive**
+```bash
+# Clean build folder
+rm -rf ~/Library/Developer/Xcode/DerivedData/AURA-*
+
+# Build for device (not just simulator)
+xcodebuild clean build -project AURA.xcodeproj -scheme AURA -destination 'generic/platform=iOS'
+
+# Archive for distribution
+xcodebuild archive -project AURA.xcodeproj -scheme AURA -archivePath ./build/AURA.xcarchive
+```
+
+---
+
+### **Phase 3: Pre-Submission Validation**
+
+#### **Step 3.1: Static Analysis**
+```bash
+# Validate entitlements match capabilities
+codesign -d --entitlements - ./build/AURA.xcarchive/Products/Applications/AURA.app
+
+# Check for all privacy keys in final build
+/usr/libexec/PlistBuddy -c "Print" ./build/AURA.xcarchive/Products/Applications/AURA.app/Info.plist | grep Usage
+```
+
+**Expected output should include:**
+- `NSFaceIDUsageDescription`
+- `NSSpeechRecognitionUsageDescription`
+- `NSCameraUsageDescription` (already in build settings line 374)
+- `NSMicrophoneUsageDescription` (already in build settings line 375)
+
+#### **Step 3.2: Validate Archive**
+```bash
+# Use Xcode's validation before uploading
+xcodebuild -exportArchive \
+  -archivePath ./build/AURA.xcarchive \
+  -exportPath ./build/export \
+  -exportOptionsPlist exportOptions.plist \
+  -allowProvisioningUpdates
+```
+
+Create `exportOptions.plist`:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>compileBitcode</key>
+    <false/>
+</dict>
+</plist>
+```
+
+#### **Step 3.3: Transporter Validation (Before Upload)**
+```bash
+# Validate IPA before upload to prevent rejection
+xcrun altool --validate-app \
+  -f ./build/export/AURA.ipa \
+  -t ios \
+  --apiKey YOUR_API_KEY \
+  --apiIssuer YOUR_ISSUER_ID
+```
+
+---
+
+### **Phase 4: App Store Resubmission**
+
+#### **Step 4.1: Update Build Number**
+In `project.pbxproj` line 366 & 402:
+- Current: `CURRENT_PROJECT_VERSION = 3;`
+- New: `CURRENT_PROJECT_VERSION = 4;`
+
+**Or via Xcode:**
+1. Select AURA target → General tab
+2. Increment Build number from 3 to 4
+3. Keep Version as 1.0.2 (no need to change)
+
+#### **Step 4.2: Archive & Upload**
+1. In Xcode: Product → Archive
+2. Window → Organizer → Select your archive
+3. Click "Validate App" (should pass now)
+4. Click "Distribute App" → App Store Connect
+5. Follow upload wizard
+
+#### **Step 4.3: App Store Connect Preparation**
+- No changes needed in App Store Connect metadata
+- The build will process automatically
+- Monitor for processing status (typically 15-60 minutes)
+
+---
+
+### **Phase 5: Future-Proofing & CI/CD Integration**
+
+#### **Step 5.1: Automated Privacy Key Validation Script**
+
+Create `scripts/validate_privacy_keys.sh`:
+```bash
+#!/bin/bash
+
+set -e
+
+INFO_PLIST="Info.plist"
+REQUIRED_KEYS=(
+    "NSFaceIDUsageDescription"
+    "NSSpeechRecognitionUsageDescription"
+    "NSCameraUsageDescription"
+    "NSMicrophoneUsageDescription"
+)
+
+echo "🔍 Validating Privacy Keys in $INFO_PLIST"
+
+MISSING_KEYS=()
+
+for KEY in "${REQUIRED_KEYS[@]}"; do
+    if ! /usr/libexec/PlistBuddy -c "Print :$KEY" "$INFO_PLIST" &> /dev/null; then
+        MISSING_KEYS+=("$KEY")
+    fi
+done
+
+if [ ${#MISSING_KEYS[@]} -eq 0 ]; then
+    echo "✅ All required privacy keys are present"
+    exit 0
+else
+    echo "❌ Missing privacy keys:"
+    printf '   - %s\n' "${MISSING_KEYS[@]}"
+    exit 1
+fi
+```
+
+Make executable: `chmod +x scripts/validate_privacy_keys.sh`
+
+#### **Step 5.2: Xcode Build Phase**
+Add Run Script Phase to AURA target (runs before compilation):
+```bash
+# Privacy Key Validation
+"${PROJECT_DIR}/scripts/validate_privacy_keys.sh"
+```
+
+#### **Step 5.3: Framework Audit Script**
+
+Create `scripts/audit_frameworks.sh`:
+```bash
+#!/bin/bash
+
+# List all linked frameworks and check for missing privacy keys
+PROJECT_FILE="AURA.xcodeproj/project.pbxproj"
+
+FRAMEWORKS=$(grep -o '[A-Za-z]*\.framework' "$PROJECT_FILE" | sort -u)
+
+echo "📦 Linked Frameworks:"
+echo "$FRAMEWORKS"
+
+PRIVACY_REQUIREMENTS=(
+    "Speech.framework:NSSpeechRecognitionUsageDescription"
+    "AVFoundation.framework:NSMicrophoneUsageDescription"
+    "LocalAuthentication.framework:NSFaceIDUsageDescription"
+    "CoreLocation.framework:NSLocationWhenInUseUsageDescription"
+    "Photos.framework:NSPhotoLibraryUsageDescription"
+    "Camera.framework:NSCameraUsageDescription"
+)
+
+echo ""
+echo "🔐 Privacy Key Requirements:"
+for REQ in "${PRIVACY_REQUIREMENTS[@]}"; do
+    FW="${REQ%%:*}"
+    KEY="${REQ##*:}"
+    if echo "$FRAMEWORKS" | grep -q "$FW"; then
+        echo "   ⚠️  $FW requires $KEY"
+    fi
+done
+```
+
+#### **Step 5.4: CI/CD Integration (GitHub Actions Example)**
+
+Create `.github/workflows/ios-build.yml`:
+```yaml
+name: iOS Build & Validation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Validate Privacy Keys
+        run: ./scripts/validate_privacy_keys.sh
+      
+      - name: Audit Frameworks
+        run: ./scripts/audit_frameworks.sh
+      
+      - name: Build
+        run: |
+          xcodebuild clean build \
+            -project AURA.xcodeproj \
+            -scheme AURA \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+```
+
+---
+
+### **Phase 6: Documentation & Team Communication**
+
+#### **Step 6.1: Update Project Documentation**
+
+Create/Update `PRIVACY_COMPLIANCE.md`:
+```markdown
+# Privacy & Permissions Compliance
+
+## Required Privacy Keys
+
+The following privacy descriptions are required for AURA:
+
+| Key | Framework | Purpose |
+|-----|-----------|---------|
+| NSSpeechRecognitionUsageDescription | Speech.framework | Voice-based therapy exercises |
+| NSCameraUsageDescription | AVFoundation | Facial expression detection |
+| NSMicrophoneUsageDescription | AVFoundation | Audio feedback and recording |
+| NSFaceIDUsageDescription | LocalAuthentication | Secure authentication |
+
+## Adding New Features
+
+Before linking new frameworks:
+1. Check Apple's documentation for required privacy keys
+2. Add privacy string to Info.plist
+3. Run `./scripts/validate_privacy_keys.sh`
+4. Test permission flows on device
+
+## App Store Submission Checklist
+
+- [ ] Run privacy key validation script
+- [ ] Test all permission prompts on physical device
+- [ ] Increment build number
+- [ ] Validate archive before upload
+- [ ] Monitor for processing errors in App Store Connect
+```
+
+#### **Step 6.2: Add Code Comments**
+
+Add to `Services/SiriKitManager.swift`:
+```swift
+// IMPORTANT: This class uses Speech.framework for voice recognition
+// Required: NSSpeechRecognitionUsageDescription in Info.plist
+// See: PRIVACY_COMPLIANCE.md
+```
+
+---
+
+## **Summary of Required Actions**
+
+### **Immediate (Before Resubmission):**
+1. ✅ Add `NSSpeechRecognitionUsageDescription` to Info.plist
+2. ✅ Increment build number to 4
+3. ✅ Clean build and test on physical device
+4. ✅ Validate archive with Xcode
+5. ✅ Upload to App Store Connect
+
+### **Short-term (This Week):**
+1. Create validation scripts
+2. Add build phase script
+3. Test all permission flows thoroughly
+4. Document privacy compliance
+
+### **Long-term (Ongoing):**
+1. Set up CI/CD with automated validation
+2. Establish team review process for framework additions
+3. Keep privacy documentation updated
+4. Monitor Apple's privacy requirement changes
+
+---
+
+## **Expected Timeline**
+
+- **Fix Implementation:** 10 minutes
+- **Build & Test:** 30 minutes
+- **Archive & Upload:** 20 minutes
+- **App Store Processing:** 1-2 hours
+- **Review (after submission):** 24-48 hours
+
+---
+
+## **Risk Assessment**
+
+**Low Risk:**
+- Adding the privacy key is a standard fix
+- No code changes required
+- Speech framework already properly implemented
+
+**Potential Issues:**
+- If description is too generic, Apple might request clarification (unlikely)
+- Ensure testing covers all speech recognition entry points
+
+---
+
+## **Questions to Consider**
+
+1. **Do you want to audit unused permissions?** Your app might not need all current entitlements
+2. **Should we add NSSiriUsageDescription?** You have Siri entitlement but no explicit description
+3. **Test targets?** AURATests and AURAUITests don't need separate Info.plist changes
+
+---
+
+This comprehensive plan covers investigation, remediation, validation, and future prevention. The core fix is simple (adding one privacy key), but I've provided a complete framework for maintaining compliance going forward.

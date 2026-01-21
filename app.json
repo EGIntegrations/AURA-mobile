@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "AURA",
+    "slug": "aura",
+    "version": "1.0.4",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a1a2e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "EGIntegrations.AURA--ADA-Companion",
+      "deploymentTarget": "15.0",
+      "buildNumber": "1.0.4",
+      "infoPlist": {
+        "NSCameraUsageDescription": "AURA needs camera access for facial mimicry training",
+        "NSMicrophoneUsageDescription": "AURA needs microphone access for speech practice",
+        "NSSpeechRecognitionUsageDescription": "AURA needs speech recognition for vocabulary practice",
+        "NSFaceIDUsageDescription": "AURA uses Face ID for secure sign-in",
+        "NSPhotoLibraryUsageDescription": "AURA may save training session photos to your photo library for progress tracking",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1a1a2e"
+      },
+      "package": "com.egintegrations.aura",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
+    },
+    "plugins": [
+      "expo-camera",
+      "expo-local-authentication",
+      "expo-dev-client"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "de6a7920-284c-40fb-861d-d2d9e28be82b"
+      },
+      "backendBaseUrl": ""
+    },
+    "owner": "egintegrations"
+  }
+}

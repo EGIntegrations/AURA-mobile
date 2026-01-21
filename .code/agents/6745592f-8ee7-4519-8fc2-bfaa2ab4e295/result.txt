@@ -1,0 +1,472 @@
+[2025-11-11T17:27:50] OpenAI Codex v0.0.0 (research preview)
+--------
+workdir: /Users/elliottgodwin/Desktop/AutismTrainerApp
+model: gpt-5-codex
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: medium
+reasoning summaries: auto
+--------
+[2025-11-11T17:27:50] User instructions:
+SwiftUI app at /Users/elliottgodwin/Desktop/AutismTrainerApp has severe layout breakage across every main view after recent changes. Screens from Nov 11 2025 show: home tiles misaligned/off-screen, sticky summary overlay covering content, Mimicry view missing image previews, ConversationPracticeView speech interactions unresponsive, and general safe-area issues. Need a holistic diagnostic/remediation plan: audit all primary views (ContentView, GameView, MimicryView, ConversationPracticeView, VocabularyView, etc.), identify safe-area misuse, GeometryReader pitfalls, hard-coded frames, overlay layering conflicts, and data-binding failures causing missing media. Plan must outline reproduction steps, file-by-file inspections with line references, proposed fixes (SwiftUI layout adjustments, asset loading checks, speech pipeline debugging), and validation strategy across iPhone models plus speech/mimicry functionality. No code changes yet—just a comprehensive plan consolidating best practices.
+
+[Running in read-only mode - no modifications allowed]
+[2025-11-11T17:27:50] OpenAI Codex v0.0.0 (research preview)
+--------
+workdir: /Users/elliottgodwin/Desktop/AutismTrainerApp
+model: gpt-5-codex
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: medium
+reasoning summaries: auto
+--------
+[2025-11-11T17:27:50] User instructions:
+SwiftUI app at /Users/elliottgodwin/Desktop/AutismTrainerApp has severe layout breakage across every main view after recent changes. Screens from Nov 11 2025 show: home tiles misaligned/off-screen, sticky summary overlay covering content, Mimicry view missing image previews, ConversationPracticeView speech interactions unresponsive, and general safe-area issues. Need a holistic diagnostic/remediation plan: audit all primary views (ContentView, GameView, MimicryView, ConversationPracticeView, VocabularyView, etc.), identify safe-area misuse, GeometryReader pitfalls, hard-coded frames, overlay layering conflicts, and data-binding failures causing missing media. Plan must outline reproduction steps, file-by-file inspections with line references, proposed fixes (SwiftUI layout adjustments, asset loading checks, speech pipeline debugging), and validation strategy across iPhone models plus speech/mimicry functionality. No code changes yet—just a comprehensive plan consolidating best practices.
+
+[Running in read-only mode - no modifications allowed]
+
+[2025-11-11T17:27:53] thinking
+
+**Planning comprehensive project inspection**
+[2025-11-11T17:27:53] exec bash -lc ls in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:27:53] bash -lc ls succeeded in 11ms:
+AI
+API_SETUP_GUIDE.md
+AppIcon.png
+Assets.xcassets
+AURA.xcodeproj
+AutismTrainerApp.entitlements
+AutismTrainerAppApp.swift
+AutismTrainerAppTests
+AutismTrainerAppUITests
+AWS_BACKEND_PLAN.md
+CLAUDE_SESSION_CONTEXT.md
+CODEX.md
+DatasetImages
+ExpressionClassifier.mlpackage
+fix_framework_linking.sh
+FOUNDATION_MODELS_README.md
+Info.plist
+Item.swift
+Models
+PERSISTENT_ISSUES_REPORT.md
+[2025-11-11T17:27:53] tokens used: 5,636
+
+[2025-11-11T17:27:55] thinking
+
+**Searching for view components**
+[2025-11-11T17:27:55] exec bash -lc 'ls Views' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:27:55] bash -lc 'ls Views' succeeded in 12ms:
+AdminDashboardView.swift
+APIKeyConfigurationView.swift
+AuthenticationView.swift
+CameraUI.swift
+Components
+ContentView.swift
+ConversationPracticeView.swift
+ConversationPracticeView.swift.backup
+FacePipeline.swift
+GameView.swift
+MimicryView.swift
+PlayerProgressView.swift
+SessionView.swift
+TherapyLLM.swift
+VisionTrainingView.swift
+VocabularyView.swift
+VocabularyWithSpeechView.swift
+[2025-11-11T17:27:55] tokens used: 5,975
+
+[2025-11-11T17:27:57] thinking
+
+**Preparing to audit ContentView files**
+[2025-11-11T17:27:58] exec bash -lc 'nl -ba Views/ContentView.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:27:58] bash -lc 'nl -ba Views/ContentView.swift' succeeded in 14ms:
+     1	import SwiftUI
+     2	import AVFoundation
+     3	
+     4	/// Root entry for authenticated/unauthenticated flows.
+     5	struct ContentView: View {
+     6	    @StateObject private var authManager = AuthenticationManager()
+     7	    @StateObject private var siriKitManager = SiriKitManager()
+     8	
+     9	    @State private var showingGameView = false
+    10	    @State private var showingMimicryView = false
+    11	    @State private var showingProgressView = false
+    12	    @State private var showingVocabularyView = false
+    13	    @State private var showingAdminDashboard = false
+    14	    @State private var showingConversationView = false
+    15	    @State private var showingAPIKeyConfig = false
+    16	
+    17	    private var playerProgress: PlayerProgress { authManager.currentProgress }
+    18	
+    19	    var body: some View {
+    20	        Group {
+[2025-11-11T17:27:58] tokens used: 6,241
+
+[2025-11-11T17:28:00] thinking
+
+**Analyzing GeometryReader usage and layout concerns**
+[2025-11-11T17:28:14] exec bash -lc 'nl -ba Views/GameView.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:14] bash -lc 'nl -ba Views/GameView.swift' succeeded in 16ms:
+     1	import SwiftUI
+     2	import AVFoundation
+     3	import UIKit
+     4	
+     5	struct GameView: View {
+     6	    @EnvironmentObject var authManager: AuthenticationManager
+     7	    @Environment(\.dismiss) private var dismiss
+     8	    @StateObject private var datasetManager = ImageDatasetManager()
+     9	    @StateObject private var audioManager = AudioManager()
+    10	
+    11	    @State private var currentSession = GameSession(startTime: Date())
+    12	    @State private var currentQuestion: GameQuestion?
+    13	    @State private var questionStartTime = Date()
+    14	    @State private var showFeedback = false
+    15	    @State private var lastAnswerCorrect = false
+    16	    @State private var selectedEmotion: String?
+    17	    @State private var timeRemaining = 25.0
+    18	    @State private var timer: Timer?
+    19	    @State private var gameStarted = false
+    20	    @State private var showingSummary = false
+[2025-11-11T17:28:14] tokens used: 10,402
+
+[2025-11-11T17:28:17] thinking
+
+**Analyzing UI layout problems**
+[2025-11-11T17:28:17] exec bash -lc 'nl -ba Views/MimicryView.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:17] bash -lc 'nl -ba Views/MimicryView.swift' succeeded in 11ms:
+     1	import SwiftUI
+     2	import AVFoundation
+     3	
+     4	struct MimicryView: View {
+     5	    @EnvironmentObject var authManager: AuthenticationManager
+     6	    @StateObject private var cameraManager = CameraManager()
+     7	    @StateObject private var facePipeline = FacePipeline()
+     8	    @StateObject private var audioManager = AudioManager()
+     9	    @Environment(\.dismiss) private var dismiss
+    10	
+    11	    @State private var targetEmotion = "Happy"
+    12	    @State private var isRecognizing = false
+    13	    @State private var currentScore = 0
+    14	    @State private var targetEmotionIndex = 0
+    15	    @State private var showSuccess = false
+    16	    @State private var detectedEmotion = ""
+    17	    @State private var confidence: Double = 0.0
+    18	    @State private var roundsCompleted = 0
+    19	    @State private var maxRounds = 5
+    20	    @State private var referenceImage: UIImage?
+[2025-11-11T17:28:17] tokens used: 16,969
+
+[2025-11-11T17:28:20] thinking
+
+**Planning investigation of image loading and speech issues**
+[2025-11-11T17:28:21] exec bash -lc 'nl -ba Views/ConversationPracticeView.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:21] bash -lc 'nl -ba Views/ConversationPracticeView.swift' succeeded in 18ms:
+     1	import SwiftUI
+     2	import AVFoundation
+     3	
+     4	struct ConversationPracticeView: View {
+     5	    @EnvironmentObject private var authManager: AuthenticationManager
+     6	    @Environment(\.dismiss) private var dismiss
+     7	
+     8	    @StateObject private var conversationService = ConversationService()
+     9	    @StateObject private var elevenLabsService = ElevenLabsService.shared
+    10	
+    11	    @State private var messageText = ""
+    12	    @State private var isListening = false
+    13	    @State private var isProcessing = false
+    14	    @State private var hasFinalized = false
+    15	    @State private var conversationStart = Date()
+    16	
+    17	    @State private var currentScenario = ScenarioPalette.socialGreeting
+    18	    @Namespace private var scenarioNamespace
+    19	
+    20	    private var availableScenarios: [ScenarioPalette] { ScenarioPalette.allCases }
+[2025-11-11T17:28:21] tokens used: 36,742
+
+[2025-11-11T17:28:23] thinking
+
+**Checking safe area usage**
+[2025-11-11T17:28:23] exec bash -lc 'nl -ba Views/VocabularyView.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:23] bash -lc 'nl -ba Views/VocabularyView.swift' succeeded in 12ms:
+     1	import SwiftUI
+     2	import Speech
+     3	
+     4	struct VocabularyView: View {
+     5	    @StateObject private var siriKitManager = SiriKitManager()
+     6	    @StateObject private var imageDatasetManager = ImageDatasetManager()
+     7	    @Environment(\.dismiss) private var dismiss
+     8	    
+     9	    @State private var currentQuestion: GameQuestion?
+    10	    @State private var showFeedback = false
+    11	    @State private var feedbackMessage = ""
+    12	    @State private var isCorrect = false
+    13	    @State private var score = 0
+    14	    @State private var questionsCompleted = 0
+    15	    @State private var correctAnswers = 0
+    16	    
+    17	    private let maxQuestions = 5
+    18	    
+    19	    var body: some View {
+    20	        ZStack {
+[2025-11-11T17:28:23] tokens used: 44,608
+
+[2025-11-11T17:28:26] thinking
+
+**Exploring ConversationService and data-binding issues**
+[2025-11-11T17:28:27] exec bash -lc 'ls Services' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:27] bash -lc 'ls Services' succeeded in 9ms:
+APIKeyManager.swift
+AudioManager.swift
+AuthenticationManager.swift
+BiometricAuthManager.swift
+CameraManager.swift
+ConversationService.swift
+CurriculumEngine.swift
+ElevenLabsService.swift
+ImageDatasetManager.swift
+ImageGenerationService.swift
+OpenAIService.swift
+SiriKitManager.swift
+UserMonitoringService.swift
+[2025-11-11T17:28:27] tokens used: 60,236
+
+[2025-11-11T17:28:29] thinking
+
+**Investigating data-binding issues in ImageDatasetManager**
+[2025-11-11T17:28:30] exec bash -lc 'nl -ba Services/ImageDatasetManager.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:30] bash -lc 'nl -ba Services/ImageDatasetManager.swift' succeeded in 9ms:
+     1	import Foundation
+     2	import UIKit
+     3	import SwiftUI
+     4	
+     5	class ImageDatasetManager: ObservableObject {
+     6	    @Published var isLoading = false
+     7	    @Published var error: Error?
+     8	
+     9	    var supportedEmotions: [String] {
+    10	        return ["happy", "sad", "angry", "surprised", "fear", "neutral"]
+    11	    }
+    12	
+    13	    var kaggleDatasetURL: URL {
+    14	        // Use app bundle for iOS compatibility
+    15	        return Bundle.main.url(forResource: "EmotionImages", withExtension: nil) ?? 
+    16	               URL(fileURLWithPath: "/Users/elliottgodwin/Desktop/AutismTrainer/datasets/kaggle")
+    17	    }
+    18	    
+    19	    init() {
+    20	        // No longer generating sample images - using real kaggle dataset
+[2025-11-11T17:28:30] tokens used: 60,428
+
+[2025-11-11T17:28:33] thinking
+
+**Outlining audit and fix plan for views**
+
+I'll focus on creating a detailed plan that highlights dataset path issues causing missing images and safe area concerns across key views like GameView, MimicryView, ConversationPracticeView, VocabularyView, and VocabularyWithSpeechView. The plan will include reproduction steps, targeted file inspections with line references, investigation points, fix proposals, and cross-device validation strategies, while also exploring how these views might interact.
+[2025-11-11T17:28:34] exec bash -lc 'nl -ba Views/VocabularyWithSpeechView.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:34] bash -lc 'nl -ba Views/VocabularyWithSpeechView.swift' succeeded in 9ms:
+     1	import SwiftUI
+     2	import Speech
+     3	import UIKit
+     4	
+     5	struct VocabularyWithSpeechView: View {
+     6	    @EnvironmentObject var authManager: AuthenticationManager
+     7	    @Environment(\.dismiss) private var dismiss
+     8	
+     9	    @StateObject private var siriKitManager = SiriKitManager()
+    10	    @StateObject private var datasetManager = ImageDatasetManager()
+    11	
+    12	    @State private var currentQuestion: GameQuestion?
+    13	    @State private var showFeedback = false
+    14	    @State private var feedbackMessage = ""
+    15	    @State private var isCorrect = false
+    16	    @State private var score = 0
+    17	    @State private var questionsCompleted = 0
+    18	    @State private var correctAnswers = 0
+    19	    @State private var showingInstructions = true
+    20	    @State private var showingSummary = false
+[2025-11-11T17:28:34] tokens used: 68,731
+
+[2025-11-11T17:28:37] thinking
+
+**Planning safe area inspection**
+[2025-11-11T17:28:51] exec bash -lc 'ls Views/Components' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:51] bash -lc 'ls Views/Components' succeeded in 22ms:
+AuraBackground.swift
+GlassButton.swift
+GlassCard.swift
+[2025-11-11T17:28:51] tokens used: 74,871
+
+[2025-11-11T17:28:53] thinking
+
+**Checking AuraBackground for safe area handling**
+[2025-11-11T17:28:54] exec bash -lc 'nl -ba Views/Components/AuraBackground.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:28:54] bash -lc 'nl -ba Views/Components/AuraBackground.swift' succeeded in 23ms:
+     1	import SwiftUI
+     2	
+     3	/// Animated gradient backdrop that mirrors the login glass aesthetic.
+     4	struct AuraBackground: View {
+     5	    var body: some View {
+     6	        TimelineView(.animation) { context in
+     7	            let t = context.date.timeIntervalSince1970
+     8	            let shiftX = sin(t / 8) * 120
+     9	            let shiftY = cos(t / 6) * 90
+    10	
+    11	            ZStack {
+    12	                LinearGradient(
+    13	                    colors: [Color(hex: 0x0C1B33), Color(hex: 0x15294B), Color(hex: 0x0A1424)],
+    14	                    startPoint: .topLeading,
+    15	                    endPoint: .bottomTrailing
+    16	                )
+    17	                .ignoresSafeArea()
+    18	
+    19	                Group {
+    20	                    RadialGradient(
+[2025-11-11T17:28:54] tokens used: 75,092
+
+[2025-11-11T17:28:58] thinking
+
+**Planning safe area and overlay fixes**
+
+I’m organizing a plan to address the sticky summary overlay that covers content—likely involving views like ContentView, GameCompleteView, or PlayerProgressView with sheet modifiers or overlays in a ZStack. I'll also tackle home tiles misalignment caused by GeometryReader’s infinite height, and diagnose safe-area padding inconsistencies, especially related to NavigationStack and CameraView. Lastly, I want to investigate ConversationService for speech interaction responsiveness.
+[2025-11-11T17:29:00] exec bash -lc 'nl -ba Services/ConversationService.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:29:00] bash -lc 'nl -ba Services/ConversationService.swift' succeeded in 35ms:
+     1	import Foundation
+     2	import AVFoundation
+     3	import Speech
+     4	
+     5	// MARK: - Real-time Conversation Service
+     6	class ConversationService: ObservableObject {
+     7	    static let shared = ConversationService()
+     8	    
+     9	    @Published var isActive = false
+    10	    @Published var currentConversation: Conversation?
+    11	    @Published var conversationHistory: [ConversationMessage] = []
+    12	    @Published var isListening = false
+    13	    @Published var isProcessing = false
+    14	    
+    15	    private let openAIService = OpenAIService.shared
+    16	    private let elevenLabsService = ElevenLabsService.shared
+    17	    private let audioEngine = AVAudioEngine()
+    18	    private let speechRecognizer = ConversationSpeechRecognitionManager()
+    19	    
+    20	    // MARK: - Conversation Management
+[2025-11-11T17:29:00] tokens used: 76,466
+
+[2025-11-11T17:29:09] thinking
+
+**Drafting detailed multi-step audit plan**
+
+I’m laying out a thorough plan to diagnose speech unresponsiveness and UI issues, focusing on concurrency, shared service instances, and safe area handling across multiple views like ConversationPracticeView, ContentView, GameView, and MimicryView. I’ll organize steps for reproduction, view-specific observations, and potential async or layout pitfalls to guide the investigation.
+[2025-11-11T17:29:11] exec bash -lc 'nl -ba Views/CameraUI.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:29:11] bash -lc 'nl -ba Views/CameraUI.swift' succeeded in 30ms:
+     1	//
+     2	//  CameraUI.swift
+     3	//  AutismTrainerApp
+     4	//
+     5	//  **Only** preview-layer code lives here now.
+     6	//  Make sure *no other file* defines `CameraPreviewView` or `CameraView`.
+     7	//
+     8	
+     9	import AVFoundation
+    10	import SwiftUI
+    11	
+    12	// ───── UIView that owns one AVCaptureVideoPreviewLayer ────────────────────
+    13	final class CameraPreviewView: UIView {
+    14	    var previewLayer: AVCaptureVideoPreviewLayer?
+    15	
+    16	    override func layoutSubviews() {
+    17	        super.layoutSubviews()
+    18	        previewLayer?.frame = bounds
+    19	    }
+    20	}
+[2025-11-11T17:29:11] tokens used: 82,933
+
+[2025-11-11T17:29:13] thinking
+
+**Planning sticky overlay implementation**
+[2025-11-11T17:29:13] exec bash -lc 'nl -ba Views/Components/GlassCard.swift' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T17:29:14] bash -lc 'nl -ba Views/Components/GlassCard.swift' succeeded in 25ms:
+     1	import SwiftUI
+     2	
+     3	/// Glassmorphic card container matching the login aesthetic.
+     4	struct GlassCard<Content: View>: View {
+     5	    var cornerRadius: CGFloat = 28
+     6	    var padding: CGFloat = 24
+     7	    @ViewBuilder var content: () -> Content
+     8	
+     9	    init(cornerRadius: CGFloat = 28, padding: CGFloat = 24, @ViewBuilder content: @escaping () -> Content) {
+    10	        self.cornerRadius = cornerRadius
+    11	        self.padding = padding
+    12	        self.content = content
+    13	    }
+    14	
+    15	    var body: some View {
+    16	        content()
+    17	            .padding(padding)
+    18	            .background(
+    19	                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    20	                    .fill(Color.white.opacity(0.18))
+[2025-11-11T17:29:14] tokens used: 84,341
+
+[2025-11-11T17:29:30] thinking
+
+**Drafting detailed multi-view diagnostic plan**
+
+I’m outlining a thorough investigation and remediation plan covering overlay and safe area issues across multiple views like ContentView, GameView, MimicryView, and more—referencing specific lines to pinpoint causes. The plan will include reproduction steps, view-by-view audits citing code locations, suspected root causes (e.g., GeometryReader misuse, missing main-thread annotations, missing AVAudioSession permissions), general best practices, and validation strategies across device types and functionalities. The goal is a clear, structured summary with actionable next steps but no actual code changes yet.
+[2025-11-11T17:29:32] codex
+
+Home UI, mimicry, speech, and vocabulary screens all share the same structural issues—content pinned inside nested `GeometryReader`s, overlays that ignore safe areas, and data pipelines that silently fail when assets or speech permissions aren’t resolved. Below is a consolidated diagnostic + remediation plan.
+
+**Reproduction**
+- Clean build (`⌘⇧K`) and run on iPhone 15 Pro + iPhone SE simulators; toggle Light/Dark to expose contrast issues.
+- Validate each sheet/full-screen cover from `ContentView` so the stacked modals & overlays appear exactly as users reported.
+- For Mimicry/Conversation flows, run on a real device to exercise camera/mic permissions (simulators skip speech + AV capture).
+
+**ContentView audit (Views/ContentView.swift:41-80)**
+- `GeometryReader` drives layout and derives `safeAreaInsets`, but the inner `VStack` sets `spacing:0` and the trailing `progressSnapshot` is outside the `ScrollView` yet inside the same stack, so on short displays it overlaps tiles (user’s “home tiles off-screen”). Plan: replace `GeometryReader` with `SafeAreaInset` + `ScrollViewReader`, move footer snapshot into `.safeAreaInset(edge:.bottom)` to keep it floating without covering tiles, and convert buttons to an adaptive grid (e.g., `LazyVGrid` with `.adaptive(minimum:170)`).
+- Background currently `ignoresSafeArea` but foreground content doesn’t; add `.safeAreaPadding(.top)` instead of `padding(.top, max(safeTop+16,36))` so large titles don’t slip under status bar.
+- Diagnose “sticky summary overlay” by logging the booleans controlling `.sheet` / `.fullScreenCover`. Because all sheets share the same root NavigationStack, sheet stacking order matters; verify each binding resets to `false` on dismiss and consider a routing enum to prevent simultaneous presentation.
+
+**GameView audit (Views/GameView.swift:27-75)**
+- Entire layout is fixed padding; on smaller phones `questionPanel` + `statsStrip` exceed height, causing the stats card to float over content. Introduce `ScrollView` around the VStack or convert to `GeometryReader`-driven flexible layout with `Spacer(minLength:0)` and `.safeAreaInset` footers.
+- `FeedbackOverlay` (Views/GameView.swift:333-360) ignores safe areas and uses `Color.black.opacity(0.7)` without `.zIndex`. Because dismissal relies on `DispatchQueue.main.asyncAfter`, if `loadNextQuestion()` fails (e.g., missing images) overlay never hides, matching “sticky overlay.” Instrument `loadNextQuestion()` to surface failures via `os_log` and gate overlay dismissal on result availability.
+
+**MimicryView audit (Views/MimicryView.swift:27-82)**
+- Foreground `VStack` uses constant padding and sits on top of `CameraView` without safe-area handling; add `.safeAreaInset(edge:.top)` for header and relocate control bar into bottom inset to avoid being clipped by home indicator.
+- Missing image previews: `loadReferenceImage()` (lines 267-291) spawns nested `Task`s but never ensures bundle assets exist. `ImageDatasetManager.loadImagesForEmotion` assumes files like `EmotionImages/happy.png`; confirm these exist in the app target. Plan: add a published `@Published var referenceAsset: Image?` and expose loading state in UI, while packaging at least one sample per emotion in `Assets.xcassets` or `DatasetImages`.
+- Data binding risk: `referenceImage` is set on background threads; wrap updates in `await MainActor.run` consistently.
+
+**ConversationPracticeView audit (Views/ConversationPracticeView.swift:22-308)**
+- Layout is a fixed `VStack`, so on SE-sized view the transcript + quick responses are clipped. Introduce `ScrollView` for the middle content and move `inputBar` + `footerStats` into `safeAreaInset(edge:.bottom)`.
+- Speech unresponsive: `toggleListening()` (lines 287-304) doesn’t request microphone permission up front; speech manager also lacks `AVAudioSession` configuration. Update `ConversationService.startListening()` to set `AVAudioSession.sharedInstance().setCategory(.playAndRecord, options:[.defaultToSpeaker,.allowBluetooth])`, request record permission, and surface errors back via `@Published var lastError`.
+- Data binding: `conversationService` is a fresh `@StateObject`, while other parts of the app may use `ConversationService.shared`. Audit for duplication and either inject the shared instance or guarantee only one audio engine runs.
+
+**VocabularyView & VocabularyWithSpeechView audit**
+- `VocabularyView` (Views/VocabularyView.swift:19-151) lacks `NavigationStack` wrapping the `ZStack`, so safe areas aren’t honored when presented as a full-screen cover. Encapsulate in `NavigationStack`, add `.safeAreaPadding`, and move overlays into `.overlay(alignment:.center)` with `zIndex`.
+- Both vocab screens hard-code image frames (`.frame(width:300,height:300)`) and don’t adapt to dynamic type. Replace with `GeometryReader`-based scaling or `.aspectRatio(1, contentMode:.fit)` plus `.frame(maxWidth: min(proxy.size.width-48,360))`.
+- Speech pipeline in `VocabularyWithSpeechView` relies on `SiriKitManager` events, but recognition is triggered even if `currentQuestion` is nil (lines 70-73). Add guards so `processVoiceAnswer` queues recognition while new images load.
+
+**ImageDatasetManager audit (Services/ImageDatasetManager.swift:13-205)**
+- Asset resolution depends on `Bundle.main.url(forResource:"EmotionImages", withExtension:nil)` and falls back to an absolute path under `/Users/...`, which doesn’t exist on device—root cause of missing previews + dataset-driven cards. Action items:
+  - Move curated PNGs into `Assets.xcassets` or `DatasetImages` and add them to target membership.
+  - Replace `URL(fileURLWithPath: "/Users/...")` with `FileManager.default.urls(for:.documentDirectory, in:.userDomainMask)` for user-generated content.
+  - Add telemetry when `imageData` is nil so UI can show clear diagnostics (e.g., show placeholder + action to download dataset).
+
+**Safe-area & overlay best practices**
+- Replace ad-hoc `padding(.bottom, safeBottom + 12)` with `.safeAreaInset(edge:.bottom)` or `.scrollContentBackground(.hidden)` depending on context.
+- Wherever `CameraView` or `AuraBackground` is used, clip overlays with `.compositingGroup()` and manage z-order using `.zIndex`.
+
+**Validation strategy**
+- Device matrix: iPhone SE (compact), iPhone 15 Pro (baseline), iPhone 15 Pro Max or iPad Mini (regular). Run each interactive flow, rotating to landscape to catch overflow.
+- Accessibility: enable Dynamic Type (Large/AX sizes), VoiceOver rotor through primary buttons, and run contrast checks on overlays.
+- Functional checks:
+  1. Mimicry: confirm `CameraManager` session starts, reference image loads, detection callbacks update UI.
+  2. Speech: ensure microphone permissions prompt once, recognition results propagate to UI, and ElevenLabs audio doesn’t block further listening.
+  3. Dataset: log counts from `ImageDatasetManager.getDatasetStats()` and surface result in debug HUD to ensure assets exist before presenting views.
+- UI testing: Xcode Preview snapshots for each major view with `.previewDevice` variations; run UITests focusing on navigation from ContentView tiles to each destination.
+
+Let me know if you want me to start refactoring one of these views or wire up the diagnostics/logging mentioned above.
+[2025-11-11T17:29:48] tokens used: 87,787

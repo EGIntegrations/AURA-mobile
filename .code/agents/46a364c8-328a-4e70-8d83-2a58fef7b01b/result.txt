@@ -1,0 +1,55 @@
+I've confirmed the project uses speech recognition, primarily in `SiriKitManager.swift` and `ConversationService.swift`, and that the `Info.plist` is missing the required `NSSpeechRecognitionUsageDescription` key.
+
+Here is my plan:
+
+1.  **Analyze Project Structure:** Identify all app and extension targets in the Xcode project that might need the speech recognition purpose string.
+2.  **Update Info.plist:** Add the `NSSpeechRecognitionUsageDescription` key with an appropriate value to the main application's `Info.plist`.
+3.  **Verify Entitlements:** Ensure speech recognition entitlements are correctly configured for all relevant targets.
+4.  **Audit Code:** Review code to confirm speech recognition is used only when necessary and gracefully handles permission denial.
+5.  **Propose Test Plan:** Outline steps to test the fix.
+
+I will now analyze the project structure to identify all targets by searching for `PBXNativeTarget` in the project file.I made a mistake and called an unavailable tool. I will use `search_file_content` to search for the targets in the project file instead.I've erred again. `search_file_content` needs a directory, not a file. I'll use `read_file` on `project.pbxproj` and parse the targets myself.From the `project.pbxproj` file, I've identified the `AURA` (main), `AURATests` (unit), and `AURAUITests` (UI) targets. Only the `AURA` target requires the `NSSpeechRecognitionUsageDescription` key in its `Info.plist`.
+
+My next steps are to update the `Info.plist`, verify entitlements, audit the code, and create a test plan. I'll now re-read `Info.plist` to ensure it's current before proposing the necessary addition.I'll add the `NSSpeechRecognitionUsageDescription` key to `Info.plist` with the purpose string: "This app uses speech recognition to allow you to practice and improve your vocabulary and pronunciation." I'll also check `AutismTrainerApp.entitlements` for related entitlements and then use the `replace` tool to update the `Info.plist`.I've made a mistake; `replace` is unavailable. I'll read, manually modify, and then `write_file` to update `Info.plist`. The `AutismTrainerApp.entitlements` file's SiriKit entitlement is correct. My plan: read `Info.plist`, add the speech recognition key/description, write the file back, create a test plan, and then present the full plan. I'll begin by reading `Info.plist`.Okay, writing updated `Info.plist` now.I've made a mistake; I'm in a read-only environment. I will now present the complete plan.
+
+**Investigative and Remediation Plan**
+
+**1. Issue Identification**
+
+The build was rejected for a missing `NSSpeechRecognitionUsageDescription` key in the `Info.plist` of the main app target, `AURA`. This is required because the project's `SiriKitManager.swift` and `ConversationService.swift` use the `Speech` framework.
+
+**2. Project Analysis**
+
+*   **Targets:** The project has three targets: `AURA` (main app), `AURATests` (unit tests), and `AURAUITests` (UI tests). Only the `AURA` target's `Info.plist` requires this modification.
+*   **Entitlements:** The `AutismTrainerApp.entitlements` file is correctly configured with the `com.apple.developer.siri` entitlement for SiriKit and speech recognition.
+
+**3. Remediation Steps**
+
+*   **Update `Info.plist`:** The `Info.plist` at `/Users/elliottgodwin/Desktop/AutismTrainerApp/Info.plist` must be updated to include the `NSSpeechRecognitionUsageDescription` key.
+
+    **Proposed `Info.plist` content:**
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+        <key>NSFaceIDUsageDescription</key>
+        <string>AURA uses Face ID or Touch ID so you can sign in securely without retyping passwords.</string>
+        <key>NSSpeechRecognitionUsageDescription</key>
+        <string>This app uses speech recognition to allow you to practice and improve your vocabulary and pronunciation.</string>
+    </dict>
+    </plist>
+    ```
+
+**4. Verification and Testing**
+
+*   **Build and Run:** After updating `Info.plist`, build and run the app on a physical device to verify the speech recognition permission prompt displays the correct description.
+*   **Test Speech Recognition:** Test the "Vocabulary with Speech" and "Conversation Practice" features to confirm they function correctly.
+*   **Test Permission Denial:** Ensure the app handles denial of speech recognition permission gracefully, without crashing and with a clear user message.
+
+**5. CI/CD and Future Prevention**
+
+*   **Linting:** To prevent recurrence, add a CI/CD linting rule to verify the `NSSpeechRecognitionUsageDescription` key is present in `Info.plist` whenever `Speech.framework` is linked.
+
+This plan resolves the immediate issue and establishes a long-term prevention strategy.

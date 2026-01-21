@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>AURA uses Face ID or Touch ID so you can sign in securely without retyping passwords.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>AURA uses speech recognition during therapy exercises so it can transcribe what you say and coach you in real time.</string>
+</dict>
+</plist>

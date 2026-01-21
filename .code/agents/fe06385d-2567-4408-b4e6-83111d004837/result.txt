@@ -1,0 +1,395 @@
+[2025-11-11T15:29:51] OpenAI Codex v0.0.0 (research preview)
+--------
+workdir: /Users/elliottgodwin/Desktop/AutismTrainerApp
+model: gpt-5-codex
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: medium
+reasoning summaries: auto
+--------
+[2025-11-11T15:29:51] User instructions:
+You are helping debug an iOS/macOS SwiftUI project located at /Users/elliottgodwin/Desktop/AutismTrainerApp (main target AURA). Apple rejected the latest build upload on November 10 2025 with Transporter error 90683: Missing purpose string (NSSpeechRecognitionUsageDescription) in Info.plist for bundle AURA.app. The project likely uses speech recognition via native APIs or indirect SDK entitlements. Current Info.plist currently only declares NSFaceIDUsageDescription with value "AURA uses Face ID or Touch ID so you can sign in securely without retyping passwords.". Need to figure out why build references speech recognition, identify all code or dependency points that trigger it, confirm which targets need the string, and outline a plan to remediate (update Info.plist(s), audit entitlements, verify usage, run tests, re-submit). Consider multiple targets (main app, extensions, tests) and automation (CI/CD) to prevent recurrence. Provide a detailed investigative + remediation plan with concrete steps (files, commands, validation).
+
+[Running in read-only mode - no modifications allowed]
+[2025-11-11T15:29:51] OpenAI Codex v0.0.0 (research preview)
+--------
+workdir: /Users/elliottgodwin/Desktop/AutismTrainerApp
+model: gpt-5-codex
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: medium
+reasoning summaries: auto
+--------
+[2025-11-11T15:29:51] User instructions:
+You are helping debug an iOS/macOS SwiftUI project located at /Users/elliottgodwin/Desktop/AutismTrainerApp (main target AURA). Apple rejected the latest build upload on November 10 2025 with Transporter error 90683: Missing purpose string (NSSpeechRecognitionUsageDescription) in Info.plist for bundle AURA.app. The project likely uses speech recognition via native APIs or indirect SDK entitlements. Current Info.plist currently only declares NSFaceIDUsageDescription with value "AURA uses Face ID or Touch ID so you can sign in securely without retyping passwords.". Need to figure out why build references speech recognition, identify all code or dependency points that trigger it, confirm which targets need the string, and outline a plan to remediate (update Info.plist(s), audit entitlements, verify usage, run tests, re-submit). Consider multiple targets (main app, extensions, tests) and automation (CI/CD) to prevent recurrence. Provide a detailed investigative + remediation plan with concrete steps (files, commands, validation).
+
+[Running in read-only mode - no modifications allowed]
+
+[2025-11-11T15:29:53] thinking
+
+**Planning repository inspection**
+[2025-11-11T15:29:54] exec bash -lc ls in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:29:54] bash -lc ls succeeded in 8ms:
+AI
+API_SETUP_GUIDE.md
+AppIcon.png
+Assets.xcassets
+AURA.xcodeproj
+AutismTrainerApp.entitlements
+AutismTrainerAppApp.swift
+AutismTrainerAppTests
+AutismTrainerAppUITests
+AWS_BACKEND_PLAN.md
+CLAUDE_SESSION_CONTEXT.md
+CODEX.md
+DatasetImages
+ExpressionClassifier.mlpackage
+fix_framework_linking.sh
+FOUNDATION_MODELS_README.md
+Info.plist
+Item.swift
+Models
+PERSISTENT_ISSUES_REPORT.md
+[2025-11-11T15:29:54] tokens used: 5,596
+
+[2025-11-11T15:29:55] thinking
+
+**Inspecting Info file**
+[2025-11-11T15:29:56] exec bash -lc '/bin/cat Info.plist' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:29:56] bash -lc '/bin/cat Info.plist' succeeded in 38ms:
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSFaceIDUsageDescription</key>
+	<string>AURA uses Face ID or Touch ID so you can sign in securely without retyping passwords.</string>
+</dict>
+</plist>
+[2025-11-11T15:29:56] tokens used: 5,912
+
+[2025-11-11T15:29:58] thinking
+
+**Searching for speech recognition references**
+[2025-11-11T15:29:58] exec bash -lc 'rg -n "Speech" -g"*.swift"' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:29:58] bash -lc 'rg -n "Speech" -g"*.swift"' exited 127 in 16ms:
+ERROR
+bash: rg: command not found
+[2025-11-11T15:29:58] tokens used: 7,201
+
+[2025-11-11T15:30:00] thinking
+
+**Selecting fallback search tool**
+[2025-11-11T15:30:01] exec bash -lc 'grep -R "Speech" -n' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:01] bash -lc 'grep -R "Speech" -n' succeeded in 228ms:
+./CLAUDE_SESSION_CONTEXT.md:21:- Removed NavigationView from GameView, VocabularyView, VocabularyWithSpeechView  
+./CLAUDE_SESSION_CONTEXT.md:60:│   └── VocabularyWithSpeechView.swift (speech practice with SiriKit)
+./PROJECT_STATUS_REPORT.md:15:- **Speech recognition vocabulary practice**
+./PROJECT_STATUS_REPORT.md:47:- **Speech Recognition**: Real-time emotion name recognition
+./PROJECT_STATUS_REPORT.md:51:### **5. Speech-Enabled Vocabulary Practice** ✅
+./PROJECT_STATUS_REPORT.md:82:├── VocabularyWithSpeechView.swift # Speech practice mode
+./PROJECT_STATUS_REPORT.md:111:   - `Views/VocabularyWithSpeechView.swift`
+./PROJECT_STATUS_REPORT.md:114:- **Speech Recognition**: Add to app capabilities in Xcode
+./PROJECT_STATUS_REPORT.md:195:3. **Verify app capabilities** include Speech Recognition and SiriKit
+./PROJECT_STATUS_REPORT.md:216:- Speech recognition vocabulary practice
+./Models/UserModels.swift:163:    var enableSpeechRecognition: Bool = true
+./Models/GameModels.swift:72:    var speechPracticeHistory: [SpeechPracticeResult] = []
+./Models/GameModels.swift:96:    mutating func recordSpeechPractice(_ result: SpeechPracticeResult) {
+./Models/GameModels.swift:200:struct SpeechPracticeResult: Identifiable, Codable {
+./CODEX.md:5:- Speech practice records SiriKit-driven attempts, supports restart flows, and updates speech history for admins.
+./CODEX.md:16:├── VocabularyWithSpeechView.swift # Speech practice with SiriKit
+./CODEX.md:36:- **Authentication** – `AuthenticationManager` hashes passwords, seeds demo roles, and exposes `recordGameSession`, `recordSpeechPractice`, `recordConversation`, `recordMimicrySession` for every activity.
+./CODEX.md:39:- **Speech Practice** – `VocabularyWithSpeechView` manages SiriKit microphone access, voice + manual answers, feedback overlays, and persists `SpeechPracticeResult` records.
+./CODEX.md:47:- Be sure Speech Recognition, SiriKit, and Microphone capabilities remain enabled in the Xcode project.
+./CODEX.md:57:3. Complete Speech Practice; observe voice transcripts, feedback overlay, and final summary sheet.
+[2025-11-11T15:30:01] tokens used: 7,441
+
+[2025-11-11T15:30:04] thinking
+
+**Planning inspection and searching Info.plist files**
+[2025-11-11T15:30:05] exec bash -lc 'find . -name "Info.plist" -print' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:05] bash -lc 'find . -name "Info.plist" -print' succeeded in 24ms:
+./Info.plist
+[2025-11-11T15:30:05] tokens used: 10,777
+
+[2025-11-11T15:30:07] thinking
+
+**Checking Xcode project for Info.plist settings**
+[2025-11-11T15:30:19] exec bash -lc '/usr/bin/grep -n "INFOPLIST_FILE" -n AURA.xcodeproj/project.pbxproj' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:19] bash -lc '/usr/bin/grep -n "INFOPLIST_FILE" -n AURA.xcodeproj/project.pbxproj' succeeded in 29ms:
+370:				GENERATE_INFOPLIST_FILE = YES;
+371:				INFOPLIST_FILE = Info.plist;
+406:				GENERATE_INFOPLIST_FILE = YES;
+407:				INFOPLIST_FILE = Info.plist;
+560:				GENERATE_INFOPLIST_FILE = YES;
+578:				GENERATE_INFOPLIST_FILE = YES;
+595:				GENERATE_INFOPLIST_FILE = YES;
+611:				GENERATE_INFOPLIST_FILE = YES;
+[2025-11-11T15:30:19] tokens used: 11,049
+
+[2025-11-11T15:30:21] thinking
+
+**Checking duplicate file references in configs**
+[2025-11-11T15:30:22] exec bash -lc "/usr/bin/sed -n '300,450p' AURA.xcodeproj/project.pbxproj" in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:22] bash -lc "/usr/bin/sed -n '300,450p' AURA.xcodeproj/project.pbxproj" succeeded in 27ms:
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9DF0C7B72E0AFFC200D4B976 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9DF0C7C12E0AFFC200D4B976 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+[2025-11-11T15:30:22] tokens used: 11,450
+
+[2025-11-11T15:30:24] thinking
+
+**Continuing to gather target details**
+[2025-11-11T15:30:24] exec bash -lc "/usr/bin/sed -n '520,660p' AURA.xcodeproj/project.pbxproj" in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:24] bash -lc "/usr/bin/sed -n '520,660p' AURA.xcodeproj/project.pbxproj" succeeded in 23ms:
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 86M8HMM9D9;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+[2025-11-11T15:30:24] tokens used: 23,581
+
+[2025-11-11T15:30:28] thinking
+
+**Planning verification of speech framework and entitlements**
+[2025-11-11T15:30:28] exec bash -lc '/bin/cat AutismTrainerApp.entitlements' in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:28] bash -lc '/bin/cat AutismTrainerApp.entitlements' succeeded in 29ms:
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>aps-environment</key>
+	<string>development</string>
+	<key>com.apple.developer.siri</key>
+	<true/>
+</dict>
+</plist>
+[2025-11-11T15:30:28] tokens used: 25,757
+
+[2025-11-11T15:30:34] thinking
+
+**Planning detailed investigation and remediation**
+[2025-11-11T15:30:55] exec bash -lc "/usr/bin/nl -ba Views/VocabularyWithSpeechView.swift | sed -n '1,200p'" in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:55] bash -lc "/usr/bin/nl -ba Views/VocabularyWithSpeechView.swift | sed -n '1,200p'" succeeded in 33ms:
+     1	import SwiftUI
+     2	import Speech
+     3	import UIKit
+     4	
+     5	struct VocabularyWithSpeechView: View {
+     6	    @EnvironmentObject var authManager: AuthenticationManager
+     7	    @Environment(\.dismiss) private var dismiss
+     8	
+     9	    @StateObject private var siriKitManager = SiriKitManager()
+    10	    @StateObject private var datasetManager = ImageDatasetManager()
+    11	
+    12	    @State private var currentQuestion: GameQuestion?
+    13	    @State private var showFeedback = false
+    14	    @State private var feedbackMessage = ""
+    15	    @State private var isCorrect = false
+    16	    @State private var score = 0
+    17	    @State private var questionsCompleted = 0
+    18	    @State private var correctAnswers = 0
+    19	    @State private var showingInstructions = true
+    20	    @State private var showingSummary = false
+[2025-11-11T15:30:55] tokens used: 26,388
+
+[2025-11-11T15:30:57] thinking
+
+**Identifying microphone-related code locations**
+[2025-11-11T15:30:58] exec bash -lc "/usr/bin/nl -ba Services/SiriKitManager.swift | sed -n '1,220p'" in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:30:58] bash -lc "/usr/bin/nl -ba Services/SiriKitManager.swift | sed -n '1,220p'" succeeded in 28ms:
+     1	import Foundation
+     2	import Intents
+     3	import Speech
+     4	import AVFoundation
+     5	
+     6	// MARK: - Notification Extensions
+     7	extension Notification.Name {
+     8	    static let startGameCommand = Notification.Name("startGameCommand")
+     9	    static let practiceEmotionCommand = Notification.Name("practiceEmotionCommand")  
+    10	    static let checkProgressCommand = Notification.Name("checkProgressCommand")
+    11	    static let helpCommand = Notification.Name("helpCommand")
+    12	}
+    13	
+    14	class SiriKitManager: NSObject, ObservableObject {
+    15	    @Published var isListening = false
+    16	    @Published var transcribedText = ""
+    17	    @Published var recognizedEmotion: String?
+    18	    @Published var error: SiriKitError?
+    19	    
+    20	    private var speechRecognizer: SFSpeechRecognizer?
+[2025-11-11T15:30:58] tokens used: 28,945
+
+[2025-11-11T15:31:06] thinking
+
+**Outlining speech permission analysis and plan**
+
+I'm gathering details on where speech recognition is used in the codebase, like in VocabularyWithSpeechView.swift and ConversationService.swift, and reviewing the Xcode project for proper linking of Speech.framework and missing usage description keys. I’m setting up a plan to verify privacy strings in Info.plist across targets, check that permission requests trigger correctly, and incorporate automated scripts and build tests to ensure completeness and compliance. There’s also consideration of differences between text-to-speech and speech recognition permissions to clarify impact and risks.
+[2025-11-11T15:31:07] exec bash -lc "/usr/bin/nl -ba Views/VocabularyView.swift | sed -n '1,320p'" in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:31:07] bash -lc "/usr/bin/nl -ba Views/VocabularyView.swift | sed -n '1,320p'" succeeded in 25ms:
+     1	import SwiftUI
+     2	import Speech
+     3	
+     4	struct VocabularyView: View {
+     5	    @StateObject private var siriKitManager = SiriKitManager()
+     6	    @StateObject private var imageDatasetManager = ImageDatasetManager()
+     7	    @Environment(\.dismiss) private var dismiss
+     8	    
+     9	    @State private var currentQuestion: GameQuestion?
+    10	    @State private var showFeedback = false
+    11	    @State private var feedbackMessage = ""
+    12	    @State private var isCorrect = false
+    13	    @State private var score = 0
+    14	    @State private var questionsCompleted = 0
+    15	    @State private var correctAnswers = 0
+    16	    
+    17	    private let maxQuestions = 5
+    18	    
+    19	    var body: some View {
+    20	        ZStack {
+[2025-11-11T15:31:08] tokens used: 39,748
+
+[2025-11-11T15:31:09] thinking
+
+**Finding ContentView references to siriKitManager**
+[2025-11-11T15:31:10] exec bash -lc "/usr/bin/nl -ba Views/ContentView.swift | sed -n '200,320p'" in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:31:10] bash -lc "/usr/bin/nl -ba Views/ContentView.swift | sed -n '200,320p'" succeeded in 29ms:
+   200	        .accessibilityElement(children: .ignore)
+   201	        .accessibilityLabel("\(title): \(value)")
+   202	    }
+   203	
+   204	    private var toolbarContent: some ToolbarContent {
+   205	        ToolbarItemGroup(placement: .navigationBarTrailing) {
+   206	            Button { showingProgressView = true } label: {
+   207	                Image(systemName: "chart.line.uptrend.xyaxis")
+   208	                    .foregroundStyle(.white)
+   209	            }
+   210	
+   211	            Menu {
+   212	                if authManager.currentUser?.hasPermission(.manageStudents) == true ||
+   213	                    authManager.currentUser?.hasPermission(.manageChildren) == true {
+   214	                    Button("Admin Dashboard") { showingAdminDashboard = true }
+   215	                }
+   216	                Button("API Keys") { showingAPIKeyConfig = true }
+   217	                Button(role: .destructive) {
+   218	                    BiometricAuthManager.shared.clearSavedUser()
+   219	                    authManager.signOut()
+[2025-11-11T15:31:10] tokens used: 42,905
+
+[2025-11-11T15:31:12] thinking
+
+**Identifying specific code lines**
+[2025-11-11T15:31:12] exec bash -lc "/usr/bin/nl -ba Services/ConversationService.swift | sed -n '320,460p'" in /Users/elliottgodwin/Desktop/AutismTrainerApp
+[2025-11-11T15:31:12] bash -lc "/usr/bin/nl -ba Services/ConversationService.swift | sed -n '320,460p'" succeeded in 32ms:
+   320	                    id: "conflict_resolution",
+   321	                    title: "Resolving Disagreements",
+   322	                    description: "Practice handling conflicts",
+   323	                    topic: "conflict_resolution",
+   324	                    goal: "Learn to resolve disagreements calmly",
+   325	                    difficulty: 3
+   326	                ),
+   327	                ConversationScenario(
+   328	                    id: "job_interview",
+   329	                    title: "Job Interview",
+   330	                    description: "Practice professional conversations",
+   331	                    topic: "professional",
+   332	                    goal: "Learn workplace communication",
+   333	                    difficulty: 3
+   334	                )
+   335	            ]
+   336	            
+   337	        default:
+   338	            return getAvailableScenarios(for: UserLevel(level: 1, description: "Beginner"))
+   339	        }
+[2025-11-11T15:31:12] tokens used: 43,787
+
+[2025-11-11T15:31:30] thinking
+
+**Outlining detailed remediation plan for speech usage**
+
+I’m putting together a thorough investigative and remediation plan to address the missing speech recognition usage string error. I’ll document key findings with file and line references, identify impacted targets, and layout concrete steps including commands for verifying build settings, updating Info.plist files, validating entitlements, and automating checks. This will help ensure the app’s speech-related features comply fully across targets.
+[2025-11-11T15:31:31] codex
+
+**Key Findings**
+
+- `Info.plist` (root) currently only contains `NSFaceIDUsageDescription` (`Info.plist:1-6`); there is no `NSSpeechRecognitionUsageDescription`, so the built app bundle ships without the privacy text Transporter requires.
+- The primary target links `Speech.framework` (`AURA.xcodeproj/project.pbxproj:15-163`) and requests speech recognition at runtime through `SiriKitManager.requestSpeechPermission()` in multiple entry points (`Views/VocabularyWithSpeechView.swift:1-74`, `Views/VocabularyView.swift:1-119`, `Views/ContentView.swift:249-253`). The Siri manager itself uses `SFSpeechRecognizer` for live transcription (`Services/SiriKitManager.swift:14-188`) and conversation mode also spins up `SFSpeechRecognizer` (`Services/ConversationService.swift:343-408`). Because these APIs are present, App Store Connect enforces the speech purpose string.
+- The entitlements file enables Siri (`AutismTrainerApp.entitlements:4-8`), confirming that speech- and Siri-related capabilities are part of the signed bundle. Any extensions or tests inheriting the same Info.plist (all three XCBuildConfigurations point to `Info.plist` via `INFOPLIST_FILE = Info.plist` at `AURA.xcodeproj/project.pbxproj:370-407`) will also need the string or `GENERATE_INFOPLIST_FILE` will fail validation per-target.
+- CI/CD risk: there is no automated check preventing future privacy-key regressions; `PROJECT_STATUS_REPORT.md` already lists “Verify app capabilities include Speech Recognition and SiriKit” (`PROJECT_STATUS_REPORT.md:195`), but no enforcement exists.
+
+**Remediation Plan**
+
+1. **Inventory and confirm targets**
+   - Run `xcodebuild -list -project AURA.xcodeproj` to enumerate targets and ensure there are no app extensions using the shared plist.
+   - For each target (`AURA`, `AURATests`, `AURAUITests`), run `xcodebuild -showBuildSettings -scheme <Scheme> | grep -i INFOPLIST_FILE` to confirm they all read the same plist or generate one from it. This prevents missing the key on an auxiliary bundle.
+
+2. **Author the required privacy copy**
+   - Draft a user-facing sentence such as: “AURA uses Speech Recognition to transcribe what you say during therapy exercises so it can coach you in real time.”
+   - Have product/legal approve the wording if needed; Apple rejects vague or empty strings.
+
+3. **Update all Info.plist sources**
+   - Because `GENERATE_INFOPLIST_FILE = YES`, add the new key/value in two places to be safe:
+     1. Edit `Info.plist` to add `<key>NSSpeechRecognitionUsageDescription</key>` with the approved text (use `/usr/libexec/PlistBuddy -c 'Add :NSSpeechRecognitionUsageDescription string "<text>"' Info.plist`).
+     2. Mirror the text in `AURA.xcodeproj/project.pbxproj` under each `INFOPLIST_KEY_*` block (e.g., add `INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "...";` inside both Debug and Release for the app target). This keeps build settings truthful even if the plist path changes later.
+   - If unit/UI test bundles truly need the key (Transporter sometimes checks only installable bundles), set `INFOPLIST_KEY_NSSpeechRecognitionUsageDescription` for those configs as well.
+
+4. **Audit other privacy keys**
+   - While editing, confirm that `NSMicrophoneUsageDescription` and `NSCameraUsageDescription` strings are human-readable (they currently include literal `\n` via build settings; adjust if necessary to avoid line-break artifacts).
+   - Check for Siri usage text (`NSSiriUsageDescription`) since Siri intents are enabled; if absent, add it now to avoid the next rejection.
+
+5. **Verify entitlements and capabilities**
+   - Open the project in Xcode (or inspect `project.pbxproj`) to ensure Speech Recognition capability is enabled alongside Siri. If not, enable it so the entitlement set matches the APIs in use.
+   - From the CLI, dump the built app’s entitlements with `codesign -d --entitlements :- <path to AURA.app>` after a build to confirm no missing speech-related entitlements.
+
+6. **Regression tests & validation**
+   - Build locally: `xcodebuild -scheme AURA -configuration Release -sdk iphoneos clean build`.
+   - Inspect the produced app’s Info.plist: `plutil -p build/Release-iphoneos/AURA.app/Info.plist | grep -n NSSpeech`.
+   - Launch the app on a device/simulator to confirm the speech consent alert now shows the new copy when `VocabularyWithSpeechView` or `requestAllPermissions()` runs.
+
+7. **Automation to prevent recurrence**
+   - Add a lightweight script (e.g., `Scripts/ci/check_privacy_strings.sh`) that runs `plutil -p` against each target plist and verifies required keys (`NSCameraUsageDescription`, `NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`, `NSSiriUsageDescription`). Fail CI if any are missing or empty.
+   - Wire this script into your CI workflow before archive steps (e.g., GitHub Actions job step).
+
+8. **Documentation & release checklist**
+   - Update `SETUP_GUIDE.md` or `PROJECT_STATUS_REPORT.md` with the exact keys and expected copy so future contributors know they must stay in place.
+   - Add a checklist item to your release process (Transporter upload script or Fastlane lane) reminding maintainers to run the privacy-key audit before submitting.
+
+9. **Rebuild and re-submit**
+   - After the above, generate a fresh archive (`xcodebuild -scheme AURA -sdk iphoneos -configuration Release archive -archivePath build/AURA.xcarchive`), export with the same export options, and upload via Transporter or `xcodebuild -exportArchive`.
+   - Confirm App Store Connect processing succeeds without error 90683.
+
+Following this plan addresses the immediate rejection (missing `NSSpeechRecognitionUsageDescription`) and sets up guardrails so future changes to speech-related features automatically guarantee the necessary privacy disclosures.
+[2025-11-11T15:31:46] tokens used: 47,971

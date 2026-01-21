@@ -1,0 +1,564 @@
+Now I'll create a comprehensive diagnostic and remediation plan based on the code inspection:
+
+---
+
+# **AURA UI Misalignment Diagnostic & Remediation Plan**
+
+## **Executive Summary**
+The authenticated home screen (ContentView.swift) exhibits three critical layout issues:
+1. **Title clipping**: "AURA" title collides with Dynamic Island/status bar
+2. **Button drift**: Experience tiles drift off-screen horizontally
+3. **Scroll disappearance**: Bottom CTA card (progressSnapshot) vanishes during scroll
+
+**Root cause analysis** reveals **GeometryReader misuse**, **inconsistent safe-area handling**, and **ScrollView safeAreaInset conflicts**.
+
+---
+
+## **Part 1: Reproduction Steps**
+
+### **Environment**
+- **Device**: iPhone 14 Pro / 15 Pro (Dynamic Island), iPhone SE (notch), iPhone 8 (no notch)
+- **iOS Version**: 17.0+
+- **Xcode**: 15.0+
+
+### **Steps to Reproduce**
+1. Launch AURA app on physical device
+2. Authenticate with demo account (teacher1/parent1/student1, password: "demo")
+3. Observe home screen layout:
+   - **Issue A**: "AURA" title overlaps Dynamic Island/status bar
+   - **Issue B**: Tap experience tiles (e.g., "Emotion Recognition") → buttons extend beyond screen right edge
+   - **Issue C**: Scroll down slowly → bottom "Sessions/Unlocked/Correct" card disappears mid-scroll
+
+### **Expected Behavior**
+- Title sits below safe area (44pt+ on Dynamic Island devices)
+- All buttons fit within horizontal margins
+- Bottom card remains anchored during scroll
+
+---
+
+## **Part 2: Root Cause Analysis**
+
+### **Suspected Issues in `Views/ContentView.swift`**
+
+#### **Issue 1: GeometryReader Safe-Area Conflict (Lines 42-60)**
+**Problem**: GeometryReader wraps the entire authenticated experience, but the header function (line 73-88) applies:
+```swift
+.padding(.top, safeAreaTop > 0 ? 0 : 12)
+```
+**Why it fails**:
+- When `proxy.safeAreaInsets.top` returns 0 (common in certain scroll states), padding becomes 12pt—insufficient for Dynamic Island (59pt safe area)
+- ScrollView's `.padding(.top, proxy.safeAreaInsets.top + 24)` (line 54) adds top padding, but the header receives inconsistent spacing
+
+**Impact**: Title clips status bar/Dynamic Island
+
+#### **Issue 2: Horizontal Layout Unbounded (Lines 137-172)**
+**Problem**: Experience tile buttons use:
+```swift
+.padding(.horizontal, 22)
+```
+**Why it fails**:
+- No explicit frame constraint on tile width
+- HStack's Spacer() pushes chevron right, but button background can extend beyond screen bounds if content overflows
+- No `.frame(maxWidth: .infinity)` or explicit width constraint on the outermost container
+
+**Impact**: Buttons drift off-screen on smaller devices (iPhone SE)
+
+#### **Issue 3: safeAreaInset vs. Spacer Conflict (Lines 51-57, 174-186)**
+**Problem**: progressSnapshot uses `.safeAreaInset(edge: .bottom)` modifier, which:
+- Adjusts ScrollView's content inset dynamically
+- Conflicts with `Spacer(minLength: 160)` in the main VStack (line 51)
+
+**Why it fails**:
+- During scroll, the safe area inset recalculates, causing the bottom card to "pop out" of view
+- The Spacer(160) reserves space, but safeAreaInset doesn't guarantee visibility during scroll
+
+**Impact**: Bottom card vanishes during scroll
+
+#### **Issue 4: GeometryReader Frame Misuse (Line 42-60)**
+**Problem**: GeometryReader doesn't constrain its content; it only reads geometry
+- No `.frame(maxWidth:)` on ZStack or ScrollView
+- Background (AuraBackground) uses `.ignoresSafeArea()` (line 17 in AuraBackground.swift), which bleeds behind system UI
+
+**Impact**: Layout "floats" without anchoring to safe boundaries
+
+---
+
+## **Part 3: File-by-File Audit Plan**
+
+### **Priority 1: Core Layout Files**
+
+#### **File**: `Views/ContentView.swift`
+**Lines to inspect**:
+- **42-60**: GeometryReader structure
+  - ✅ Check: Does `proxy.safeAreaInsets.top` return correct values on all devices?
+  - ✅ Check: Is `.ignoresSafeArea()` on background (line 44) interfering with ScrollView safe areas?
+  
+- **73-88**: `header(safeAreaTop:)` function
+  - ❌ **Bug**: Conditional padding logic `safeAreaTop > 0 ? 0 : 12` is flawed
+  - ✅ Fix: Remove conditional, always use fixed offset relative to safe area
+  
+- **137-172**: `tile(...)` function
+  - ❌ **Bug**: No horizontal constraints
+  - ✅ Fix: Add `.frame(maxWidth: .infinity)` to button or HStack
+  
+- **174-186**: `progressSnapshot(bottomInset:)`
+  - ❌ **Bug**: `.safeAreaInset(edge: .bottom)` causes scroll jank
+  - ✅ Fix: Replace with `.overlay(alignment: .bottom)` or fixed padding
+
+- **51**: `Spacer(minLength: 160)`
+  - ❌ **Bug**: Hardcoded value doesn't adapt to device height
+  - ✅ Fix: Use dynamic bottom padding based on `proxy.size.height`
+
+**Commands to test**:
+```bash
+# Validate GeometryReader usage
+grep -n "GeometryReader\|safeAreaInsets" Views/ContentView.swift
+
+# Find all Spacer with hardcoded values
+grep -n "Spacer(minLength:" Views/ContentView.swift
+
+# Check for ignoresSafeArea misuse
+grep -rn "ignoresSafeArea" Views/
+```
+
+---
+
+#### **File**: `Views/AuthenticationView.swift`
+**Lines to inspect**:
+- **28-54**: GeometryReader + ScrollView structure (similar pattern to ContentView)
+  - ✅ Check: `.padding(.top, max(proxy.safeAreaInsets.top + 24, 48))` (line 40) uses `max()` — better than ContentView's conditional
+  - ✅ Compare: Why does AuthenticationView handle safe areas correctly?
+  
+**Key takeaway**: AuthenticationView's `max(proxy.safeAreaInsets.top + 24, 48)` guarantees minimum padding even if safe area reports 0
+
+**Commands to test**:
+```bash
+# Compare safe-area handling patterns
+diff <(grep -A5 "GeometryReader" Views/ContentView.swift) \
+     <(grep -A5 "GeometryReader" Views/AuthenticationView.swift)
+```
+
+---
+
+#### **File**: `Views/Components/AuraBackground.swift`
+**Lines to inspect**:
+- **17, 56**: `.ignoresSafeArea()` called twice
+  - ❌ **Potential issue**: Background bleeds behind system UI, interfering with child views' safe area calculations
+  - ✅ Fix: Verify if `.ignoresSafeArea()` on background causes ContentView's ScrollView to miscalculate safe areas
+
+**Commands to test**:
+```bash
+# Find all ignoresSafeArea usages
+grep -rn "ignoresSafeArea" Views/ --include="*.swift"
+```
+
+---
+
+#### **File**: `Views/Components/GlassCard.swift`
+**Lines to inspect**:
+- ✅ No layout issues detected (uses proper padding/frames)
+
+---
+
+### **Priority 2: Supporting Files**
+
+#### **Files to check for similar patterns**:
+```bash
+# Find all views using GeometryReader
+grep -l "GeometryReader" Views/*.swift
+
+# Find all uses of safeAreaInset
+grep -rn "safeAreaInset" Views/
+
+# Find hardcoded frame values
+grep -rn "\.frame(width:" Views/ | grep -v "maxWidth"
+```
+
+**Expected output**: List of files with potential layout issues
+
+---
+
+## **Part 4: Recommended Code Fixes**
+
+### **Fix 1: ContentView Header Safe Area**
+**File**: `Views/ContentView.swift:73-88`
+
+**Current (buggy)**:
+```swift
+.padding(.top, safeAreaTop > 0 ? 0 : 12)
+```
+
+**Recommended**:
+```swift
+// Remove conditional logic
+// Let ScrollView's top padding (line 54) handle spacing
+// OR use consistent minimum padding:
+.padding(.top, 8) // Consistent offset below safe area
+```
+
+**Justification**: 
+- ScrollView already applies `.padding(.top, proxy.safeAreaInsets.top + 24)`
+- Header should not override safe area logic with conditionals
+
+---
+
+### **Fix 2: Tile Horizontal Constraints**
+**File**: `Views/ContentView.swift:137-172`
+
+**Current (buggy)**:
+```swift
+private func tile(...) -> some View {
+    Button(action: action) {
+        HStack(spacing: 18) {
+            // ... content
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 20)
+        .background(...)
+    }
+}
+```
+
+**Recommended**:
+```swift
+private func tile(...) -> some View {
+    Button(action: action) {
+        HStack(spacing: 18) {
+            // ... content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading) // ADD THIS
+        .padding(.horizontal, 22)
+        .padding(.vertical, 20)
+        .background(...)
+    }
+}
+```
+
+**Justification**: 
+- `.frame(maxWidth: .infinity)` ensures button respects parent container width
+- Prevents content overflow on small devices
+
+---
+
+### **Fix 3: Bottom Card Scroll Anchor**
+**File**: `Views/ContentView.swift:51-57, 174-186`
+
+**Current (buggy)**:
+```swift
+ScrollView(...) {
+    VStack(...) {
+        // ...
+        Spacer(minLength: 160) // Line 51
+    }
+}
+.safeAreaInset(edge: .bottom) {
+    progressSnapshot(bottomInset: proxy.safeAreaInsets.bottom)
+}
+```
+
+**Recommended Option A (Overlay)**:
+```swift
+ZStack(alignment: .bottom) {
+    ScrollView(...) {
+        VStack(...) {
+            // ... content
+        }
+        .padding(.bottom, 120) // Fixed padding for card height
+    }
+    
+    // Overlay bottom card outside ScrollView
+    progressSnapshot(bottomInset: proxy.safeAreaInsets.bottom)
+}
+```
+
+**Recommended Option B (Fixed Bottom Padding)**:
+```swift
+ScrollView(...) {
+    VStack(...) {
+        // ... content
+    }
+    .padding(.bottom, 120) // Replace Spacer(minLength: 160)
+}
+.overlay(alignment: .bottom) {
+    progressSnapshot(bottomInset: proxy.safeAreaInsets.bottom)
+}
+```
+
+**Justification**:
+- `.safeAreaInset` dynamically adjusts ScrollView content inset during scroll, causing jank
+- `.overlay(alignment: .bottom)` anchors card outside scroll context
+
+---
+
+### **Fix 4: GeometryReader Constraints**
+**File**: `Views/ContentView.swift:42-60`
+
+**Current (partial)**:
+```swift
+GeometryReader { proxy in
+    ZStack(alignment: .top) {
+        AuraBackground()
+        ScrollView(...) { ... }
+    }
+}
+```
+
+**Recommended**:
+```swift
+GeometryReader { proxy in
+    ZStack(alignment: .top) {
+        AuraBackground()
+            .edgesIgnoringSafeArea(.all) // More explicit than ignoresSafeArea()
+        
+        ScrollView(...) { ... }
+            .frame(maxWidth: .infinity, maxHeight: .infinity) // ADD THIS
+    }
+}
+```
+
+**Justification**:
+- Explicit frame constraints ensure ScrollView fills available space
+- Prevents layout "floating"
+
+---
+
+## **Part 5: Testing Strategy**
+
+### **Phase 1: Device Matrix Testing**
+
+| Device | Screen Size | Safe Area Top | Test Focus |
+|--------|-------------|---------------|------------|
+| **iPhone 15 Pro Max** | 6.7" | 59pt (Dynamic Island) | Title clipping |
+| **iPhone 14 Pro** | 6.1" | 59pt (Dynamic Island) | Title clipping |
+| **iPhone 13** | 6.1" | 47pt (notch) | Title clipping |
+| **iPhone SE (3rd gen)** | 4.7" | 20pt (no notch) | Button overflow |
+| **iPhone 8** | 4.7" | 20pt (no notch) | Button overflow |
+
+**Test Protocol**:
+1. Launch app, authenticate
+2. **Test A (Title)**: Verify "AURA" title has ≥8pt gap below status bar
+3. **Test B (Buttons)**: Verify all tile buttons fit within screen width (check right edge)
+4. **Test C (Scroll)**: Scroll up/down 5 times, verify bottom card stays visible
+
+**Pass criteria**:
+- ✅ No title overlap on any device
+- ✅ All buttons fully visible (no horizontal clipping)
+- ✅ Bottom card remains anchored during scroll
+
+---
+
+### **Phase 2: Simulator Validation**
+
+**Xcode commands**:
+```bash
+# Launch simulator matrix
+xcrun simctl list devices | grep -E "iPhone (15 Pro|14 Pro|SE|8)"
+
+# Run app on each simulator
+xcodebuild -project AURA.xcodeproj \
+  -scheme AURA \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
+  clean build
+
+# Take screenshots for comparison
+xcrun simctl io booted screenshot ~/Desktop/AURA_home_15Pro.png
+```
+
+---
+
+### **Phase 3: UI Regression Tests**
+
+**Manual checklist** (per device):
+- [ ] Title spacing correct (no overlap)
+- [ ] All 5 experience tiles fully visible
+- [ ] Bottom card visible before scroll
+- [ ] Bottom card visible during scroll
+- [ ] Bottom card visible after scroll completes
+- [ ] Rotate to landscape → layout adapts correctly
+- [ ] Dynamic Type (Settings → Accessibility → Larger Text) → no overflow
+
+**Automated test candidates** (future):
+```swift
+// XCTest UI snapshot test
+func testHomeLayoutDoesNotClipTitle() {
+    let app = XCUIApplication()
+    app.launch()
+    // ... authenticate
+    
+    let titleLabel = app.staticTexts["AURA"]
+    let statusBarFrame = app.statusBars.firstMatch.frame
+    
+    XCTAssertGreaterThan(titleLabel.frame.minY, 
+                        statusBarFrame.maxY + 8,
+                        "Title overlaps status bar")
+}
+```
+
+---
+
+## **Part 6: Regression Guardrails**
+
+### **Code Review Checklist**
+Before merging UI changes:
+- [ ] No `GeometryReader` without explicit frame constraints
+- [ ] All `ignoresSafeArea()` calls justified with comments
+- [ ] No hardcoded `Spacer(minLength:)` values >100pt
+- [ ] All horizontal layouts use `.frame(maxWidth: .infinity)` or explicit widths
+- [ ] Safe area handling uses `max(safeAreaInsets.top + offset, minValue)` pattern (see AuthenticationView.swift:40)
+- [ ] ScrollView + safeAreaInset combinations reviewed for scroll jank
+
+### **SwiftUI Linting Rules** (optional, using SwiftLint)
+```yaml
+# .swiftlint.yml additions
+custom_rules:
+  geometry_reader_unconstrained:
+    name: "GeometryReader Without Frame"
+    regex: 'GeometryReader\s*\{(?!.*\.frame\()'
+    message: "GeometryReader should have explicit frame constraints"
+    severity: warning
+    
+  hardcoded_spacer:
+    name: "Large Hardcoded Spacer"
+    regex: 'Spacer\(minLength:\s*[2-9]\d{2,}\)'
+    message: "Use dynamic spacing instead of hardcoded large Spacers"
+    severity: warning
+```
+
+---
+
+## **Part 7: Investigation Commands**
+
+Run these commands to gather diagnostic data:
+
+```bash
+# 1. Find all layout-related modifiers
+echo "=== GeometryReader Usage ==="
+grep -rn "GeometryReader" Views/ --include="*.swift" | wc -l
+
+echo "=== Safe Area Modifiers ==="
+grep -rn "safeAreaInsets\|ignoresSafeArea\|edgesIgnoringSafeArea" Views/ --include="*.swift"
+
+echo "=== Frame Constraints ==="
+grep -rn "\.frame(" Views/ --include="*.swift" | grep -v "maxWidth"
+
+echo "=== Spacer Usage ==="
+grep -rn "Spacer(" Views/ --include="*.swift"
+
+# 2. Validate project settings
+xcodebuild -project AURA.xcodeproj -showBuildSettings | grep -E "IPHONEOS_DEPLOYMENT_TARGET|TARGETED_DEVICE_FAMILY"
+
+# 3. Check for dynamic type support
+grep -rn "\.font(" Views/ContentView.swift | head -10
+
+# 4. Inspect ScrollView patterns
+grep -rn "ScrollView" Views/ --include="*.swift" -A3
+
+# 5. Find all custom backgrounds
+find Views/Components -name "*Background*.swift" -exec basename {} \;
+```
+
+---
+
+## **Part 8: Expected Findings**
+
+After running investigation commands, expect to see:
+
+**Critical**:
+- 3-5 instances of `GeometryReader` without explicit frames
+- 2+ uses of `.ignoresSafeArea()` on backgrounds
+- 1 instance of `Spacer(minLength: 160)` in ContentView
+
+**Moderate**:
+- 5+ buttons without `.frame(maxWidth:)` constraints
+- 1 instance of `.safeAreaInset` causing scroll conflicts
+
+**Low Priority**:
+- Dynamic Type support partial (fonts use `.system` with fixed sizes)
+- Landscape orientation may have similar issues (not tested yet)
+
+---
+
+## **Part 9: Rollout Plan**
+
+### **Phase 1: Fix Critical Issues (1-2 hours)**
+1. Apply Fix 1 (header safe area)
+2. Apply Fix 2 (tile constraints)
+3. Test on iPhone 15 Pro simulator + physical device
+
+### **Phase 2: Fix Scroll Issue (1 hour)**
+1. Apply Fix 3 (bottom card anchor)
+2. Test scroll behavior on 3+ devices
+
+### **Phase 3: Device Matrix Testing (2-3 hours)**
+1. Run manual checklist on all target devices
+2. Document any remaining edge cases
+
+### **Phase 4: Code Review & Merge (1 hour)**
+1. Run SwiftLint (if configured)
+2. Peer review layout changes
+3. Merge to main branch
+
+**Total estimated effort**: 5-7 hours
+
+---
+
+## **Part 10: Next Steps**
+
+**Immediate actions** (in order):
+1. ✅ **You are here**: Review this diagnostic plan
+2. Run investigation commands (Part 7) to confirm findings
+3. Create git branch: `git checkout -b fix/home-ui-layout`
+4. Apply fixes in order: Fix 1 → Fix 2 → Fix 3 → Fix 4
+5. Test on primary device (iPhone 15 Pro recommended)
+6. Run device matrix testing (Part 5, Phase 1)
+7. Document any deviations from expected behavior
+8. Commit changes with detailed message
+9. Request code review
+
+**Files requiring changes**:
+- `Views/ContentView.swift` (all 4 fixes)
+- Potentially `Views/Components/AuraBackground.swift` (validate `.ignoresSafeArea()` usage)
+
+**No changes expected** (validation only):
+- `Views/AuthenticationView.swift` (reference for correct pattern)
+- `Views/Components/GlassCard.swift` (no issues detected)
+
+---
+
+## **Appendix: Quick Reference**
+
+### **Suspected Issues Summary**
+
+| Issue | File | Lines | Severity | Est. Fix Time |
+|-------|------|-------|----------|---------------|
+| Header clipping | ContentView.swift | 73-88 | **HIGH** | 15 min |
+| Button overflow | ContentView.swift | 137-172 | **HIGH** | 15 min |
+| Scroll card vanish | ContentView.swift | 51-57, 174-186 | **MEDIUM** | 30 min |
+| GeometryReader unbounded | ContentView.swift | 42-60 | **MEDIUM** | 20 min |
+
+### **Key Safe Area Values by Device**
+
+| Device | Status Bar Height | Safe Area Top | Safe Area Bottom |
+|--------|-------------------|---------------|------------------|
+| iPhone 15 Pro | 54pt | 59pt | 34pt |
+| iPhone 14 Pro | 54pt | 59pt | 34pt |
+| iPhone 13 | 47pt | 47pt | 34pt |
+| iPhone SE (3rd) | 20pt | 20pt | 0pt |
+
+### **SwiftUI Layout Best Practices**
+
+✅ **DO**:
+- Use `max(safeAreaInsets.top + offset, minValue)` for top padding
+- Add `.frame(maxWidth: .infinity)` to buttons/cards
+- Use `.overlay(alignment:)` for persistent bottom UI
+- Test on ≥3 device sizes (large/medium/small)
+
+❌ **DON'T**:
+- Use conditional logic for safe area padding (`safeAreaTop > 0 ? x : y`)
+- Mix `.safeAreaInset` with `Spacer` for bottom spacing
+- Leave `GeometryReader` without explicit frame constraints
+- Ignore landscape orientation
+
+---
+
+**End of diagnostic plan. Ready for implementation when approved.**

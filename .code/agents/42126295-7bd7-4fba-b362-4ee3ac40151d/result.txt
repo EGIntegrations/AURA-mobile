@@ -1,0 +1,65 @@
+Here is a diagnostic and remediation plan to address the UI issues in your SwiftUI application.
+
+### **1. Steps to Reproduce**
+
+1.  **Select Target:** In Xcode, select the `AURA` scheme and an iPhone simulator with a notch or Dynamic Island (e.g., iPhone 14 Pro, iPhone 15 Pro).
+2.  **Build & Run:** Build and run the application.
+3.  **Observe Home Screen:** The initial view that appears (likely `ContentView` or `AuthenticationView`) will display the layout issue.
+4.  **Identify Defects:**
+    *   Note the "AURA" title text is partially obscured by the status bar or Dynamic Island.
+    *   Observe that the primary buttons are horizontally shifted, with parts rendered off-screen.
+    *   Attempt to scroll the view vertically. The main call-to-action buttons will scroll with the content and disappear from view.
+
+### **2. Suspected Root Causes**
+
+1.  **Improper Safe Area Handling:** The root view is likely using `.ignoresSafeArea()` on a container that holds all the UI content, forcing it into the status bar area. The background should ignore the safe area, but the content should not.
+2.  **Inflexible Frame Definitions:** Buttons or their container are likely using hard-coded `frame(width: ...)` modifiers instead of adaptive layouts (like `padding` and `.frame(maxWidth: .infinity)`), causing them to overflow on certain screen sizes.
+3.  **Incorrect ScrollView Structure:** The main action buttons are probably included inside the `ScrollView`, causing them to scroll away. They should be positioned outside the scrollable content to remain fixed.
+4.  **Stack Misalignment:** The parent `VStack` or `HStack` might lack proper alignment guides (`.leading`, `.trailing`) or spacing, causing its children to be positioned incorrectly.
+
+### **3. Recommended Code Audit**
+
+To confirm these hypotheses, the following files should be inspected:
+
+*   **`Views/ContentView.swift`**: This is the most probable location for the main home screen layout. Examine the root view (`ZStack`, `VStack`), the application of backgrounds, and any `.ignoresSafeArea()` modifiers.
+*   **`Views/AuthenticationView.swift`**: If the issue appears on the login screen, this file will contain the problematic layout code.
+*   **`Views/Components/AuraBackground.swift`**: Check how the background is implemented. It should be the primary candidate for ignoring safe areas, not the view that uses it.
+*   **`Views/Components/GlassButton.swift` & `Views/Components/GlassCard.swift`**: Inspect these component files for hard-coded `frame()` modifiers that would prevent them from resizing dynamically.
+
+### **4. Proposed UI Fixes (Conceptual Plan)**
+
+1.  **Isolate Safe Area Ignorance:**
+    *   **Locate:** Find the view using `.ignoresSafeArea()`.
+    *   **Refactor:** Apply `.ignoresSafeArea()` *only* to the background view (e.g., `AuraBackground().ignoresSafeArea()`).
+    *   **Pad Content:** Ensure the foreground content (VStacks, ScrollViews, etc.) respects safe areas. If the container still ignores them, add `.padding(.top)` to the top-level content view to manually inset it.
+
+2.  **Create a Sticky Footer for Buttons:**
+    *   **Structure:** Use a `VStack` as the main layout container.
+    *   **Layout:** Place the `ScrollView` with the scrollable content inside the `VStack`. Below the `ScrollView`, place the `HStack` or `VStack` containing the main CTA buttons. Use `Spacer()` within the `VStack` to push the scrollable content to the top and the buttons to the bottom if desired.
+
+3.  **Implement Adaptive Button Layout:**
+    *   **Remove Hard-Coded Frames:** In `GlassButton.swift` or its container, replace any `frame(width: ...)` with horizontal padding (`.padding(.horizontal, ...)`) and a flexible width (`.frame(maxWidth: .infinity)`).
+
+### **5. Validation and Regression Plan**
+
+1.  **Multi-Device Simulator Testing:**
+    *   **iPhone 15 Pro:** Validate fixes for the Dynamic Island.
+    *   **iPhone SE (3rd generation):** Ensure the layout works on smaller, non-notched screens.
+    *   **iPhone 15 Pro Max:** Verify layout integrity on larger screens.
+    *   **iPad Pro:** Check for any major layout breaks on tablets.
+
+2.  **Introduce UI Snapshot Testing:**
+    *   **Action:** Add a snapshot testing library (e.g., Point-Free's `SnapshotTesting`) to the test target.
+    *   **Implementation:** Create snapshot tests for `ContentView` and `AuthenticationView` across the different target devices listed above. This will capture PNGs of the UI and fail tests if any future code change causes a visual regression.
+
+3.  **Enhance UI Tests:**
+    *   **Action:** Add assertions to `AutismTrainerAppUITests.swift`.
+    *   **Implementation:** Write tests to verify that key elements are not only present but also hittable (i.e., on-screen and not obscured).
+        ```swift
+        // Example UI Test Assertion
+        let auraTitle = app.staticTexts["AURA"]
+        XCTAssert(auraTitle.isHittable, "AURA title should be visible and not clipped")
+
+        let startButton = app.buttons["Start Session"]
+        XCTAssert(startButton.isHittable, "Start button should be on-screen and hittable")
+        ```
