@@ -4,6 +4,7 @@
     "slug": "aura",
     "version": "1.0.4",
     "orientation": "portrait",
+    "privacyPolicy": "https://aura-site-3l69adydm-egod21s-projects.vercel.app/privacy-policy",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
