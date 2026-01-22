@@ -31,6 +31,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.egintegrations.aura",
+      "targetSdkVersion": 35,
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",
