@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "EGIntegrations.AURA--ADA-Companion",
-      "deploymentTarget": "15.0",
+      "deploymentTarget": "15.1",
       "buildNumber": "1.0.4",
       "infoPlist": {
         "NSCameraUsageDescription": "AURA needs camera access for facial mimicry training",
@@ -32,7 +32,6 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.egintegrations.aura",
-      "targetSdkVersion": 35,
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",
