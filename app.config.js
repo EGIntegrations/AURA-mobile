@@ -6,11 +6,6 @@ module.exports = {
   ...appJson,
   expo: {
     ...appJson.expo,
-    plugins: [
-      ...(appJson.expo.plugins || []),
-      'expo-secure-store',
-      'expo-asset',
-    ],
     extra: {
       ...appJson.expo.extra,
       backendBaseUrl,

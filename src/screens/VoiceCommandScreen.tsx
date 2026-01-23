@@ -8,7 +8,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Audio } from 'expo-av';
-import Voice from '@react-native-voice/voice';
+import {
+  useSpeechRecognitionEvent,
+  ExpoSpeechRecognitionModule,
+} from 'expo-speech-recognition';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
@@ -60,22 +63,9 @@ export default function VoiceCommandScreen({ navigation }: any) {
     },
   ];
 
-  useEffect(() => {
-    const setup = async () => {
-      Voice.onSpeechResults = handleSpeechResults;
-      Voice.onSpeechError = handleSpeechError;
-      await Audio.requestPermissionsAsync();
-    };
-
-    setup();
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
-  }, []);
-
-  const handleSpeechResults = (event: any) => {
-    if (event.value && event.value[0]) {
-      const text = event.value[0].toLowerCase();
+  useSpeechRecognitionEvent('result', (event) => {
+    if (event.results[0]?.transcript) {
+      const text = event.results[0].transcript.toLowerCase();
       setTranscript(text);
       const matched = matchCommand(text);
       if (matched) {
@@ -84,12 +74,20 @@ export default function VoiceCommandScreen({ navigation }: any) {
         stopListening();
       }
     }
-  };
+  });
 
-  const handleSpeechError = (event: any) => {
-    console.error('Voice command error:', event);
+  useSpeechRecognitionEvent('error', (event) => {
+    console.error('Voice command error:', event.error);
     setIsListening(false);
-  };
+  });
+
+  useEffect(() => {
+    const setup = async () => {
+      await Audio.requestPermissionsAsync();
+      await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    };
+    setup();
+  }, []);
 
   const matchCommand = (text: string): CommandDefinition | null => {
     return (
@@ -104,7 +102,11 @@ export default function VoiceCommandScreen({ navigation }: any) {
       setTranscript('');
       setLastCommand('');
       setIsListening(true);
-      await Voice.start('en-US');
+      ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        maxAlternatives: 1,
+      });
     } catch (error) {
       console.error('Start listening error:', error);
       setIsListening(false);
@@ -113,7 +115,7 @@ export default function VoiceCommandScreen({ navigation }: any) {
 
   const stopListening = async () => {
     try {
-      await Voice.stop();
+      ExpoSpeechRecognitionModule.stop();
     } catch (error) {
       console.error('Stop listening error:', error);
     } finally {

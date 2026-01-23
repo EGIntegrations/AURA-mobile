@@ -11,7 +11,10 @@ import {
   Modal,
 } from 'react-native';
 import { Audio } from 'expo-av';
-import Voice from '@react-native-voice/voice';
+import {
+  useSpeechRecognitionEvent,
+  ExpoSpeechRecognitionModule,
+} from 'expo-speech-recognition';
 import { useAuthStore } from '../store/authStore';
 import { ProgressionService } from '../services/ProgressionService';
 import {
@@ -50,17 +53,26 @@ export default function ConversationScreen({ navigation }: any) {
     return () => clearInterval(interval);
   }, []);
 
+  useSpeechRecognitionEvent('result', (event) => {
+    if (event.results[0]?.transcript) {
+      const text = event.results[0].transcript;
+      setSpeechTranscript(text);
+      stopListening();
+      sendMessage(text);
+    }
+  });
+
+  useSpeechRecognitionEvent('error', (event) => {
+    console.error('Conversation speech error:', event.error);
+    setIsListening(false);
+  });
+
   useEffect(() => {
     const setupVoice = async () => {
-      Voice.onSpeechResults = handleSpeechResults;
-      Voice.onSpeechError = handleSpeechError;
       await Audio.requestPermissionsAsync();
+      await ExpoSpeechRecognitionModule.requestPermissionsAsync();
     };
-
     setupVoice();
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
   }, []);
 
   const startScenario = async (scenario: ConversationScenario, mode: 'text' | 'talk') => {
@@ -122,25 +134,16 @@ export default function ConversationScreen({ navigation }: any) {
     await sendMessage(inputText);
   };
 
-  const handleSpeechResults = (event: any) => {
-    if (event.value && event.value[0]) {
-      const text = event.value[0];
-      setSpeechTranscript(text);
-      stopListening();
-      sendMessage(text);
-    }
-  };
-
-  const handleSpeechError = (event: any) => {
-    console.error('Conversation speech error:', event);
-    setIsListening(false);
-  };
-
   const startListening = async () => {
     try {
       setSpeechTranscript('');
       setIsListening(true);
-      await Voice.start('en-US');
+      ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        maxAlternatives: 1,
+        continuous: false,
+      });
     } catch (error) {
       console.error('Start listening error:', error);
       setIsListening(false);
@@ -149,7 +152,7 @@ export default function ConversationScreen({ navigation }: any) {
 
   const stopListening = async () => {
     try {
-      await Voice.stop();
+      ExpoSpeechRecognitionModule.stop();
     } catch (error) {
       console.error('Stop listening error:', error);
     } finally {

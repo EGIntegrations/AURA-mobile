@@ -46,7 +46,26 @@
     "plugins": [
       "expo-camera",
       "expo-local-authentication",
-      "expo-dev-client"
+      "expo-dev-client",
+      "expo-speech-recognition",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "useAndroidX": true,
+            "enableProguardInReleaseBuilds": true,
+            "packagingOptions": {
+              "pickFirst": [
+                "lib/armeabi-v7a/libc++_shared.so",
+                "lib/arm64-v8a/libc++_shared.so",
+                "lib/x86/libc++_shared.so",
+                "lib/x86_64/libc++_shared.so"
+              ]
+            },
+            "extraProguardRules": "-dontwarn com.android.support.**\n-dontwarn androidx.**"
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

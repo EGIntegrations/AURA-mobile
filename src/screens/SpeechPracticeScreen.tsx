@@ -10,7 +10,10 @@ import {
   Alert,
 } from 'react-native';
 import { Audio } from 'expo-av';
-import Voice from '@react-native-voice/voice';
+import {
+  useSpeechRecognitionEvent,
+  ExpoSpeechRecognitionModule,
+} from 'expo-speech-recognition';
 import { useAuthStore } from '../store/authStore';
 import { ImageDatasetService } from '../services/ImageDatasetService';
 import { AudioService } from '../services/AudioService';
@@ -38,29 +41,9 @@ export default function SpeechPracticeScreen({ navigation }: any) {
   const [isCorrect, setIsCorrect] = useState(false);
   const [showingSummary, setShowingSummary] = useState(false);
 
-  useEffect(() => {
-    setupVoice();
-    return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
-      AudioService.stopSpeaking();
-    };
-  }, []);
-
-  const setupVoice = async () => {
-    try {
-      Voice.onSpeechResults = onSpeechResults;
-      Voice.onSpeechError = onSpeechError;
-
-      // Request permissions
-      await Audio.requestPermissionsAsync();
-    } catch (error) {
-      console.error('Voice setup error:', error);
-    }
-  };
-
-  const onSpeechResults = (event: any) => {
-    if (event.value && event.value[0]) {
-      const text = event.value[0];
+  useSpeechRecognitionEvent('result', (event) => {
+    if (event.results[0]?.transcript) {
+      const text = event.results[0].transcript;
       setTranscribedText(text);
 
       // Try to recognize emotion
@@ -69,12 +52,28 @@ export default function SpeechPracticeScreen({ navigation }: any) {
         processVoiceAnswer(recognizedEmotion);
       }
     }
-  };
+  });
 
-  const onSpeechError = (event: any) => {
-    console.error('Speech error:', event);
+  useSpeechRecognitionEvent('error', (event) => {
+    console.error('Speech error:', event.error);
     setIsListening(false);
-  };
+  });
+
+  useEffect(() => {
+    const setupVoice = async () => {
+      try {
+        await Audio.requestPermissionsAsync();
+        await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      } catch (error) {
+        console.error('Voice setup error:', error);
+      }
+    };
+
+    setupVoice();
+    return () => {
+      AudioService.stopSpeaking();
+    };
+  }, []);
 
   const recognizeEmotionFromText = (text: string): string | null => {
     const lowerText = text.toLowerCase();
@@ -137,7 +136,12 @@ export default function SpeechPracticeScreen({ navigation }: any) {
     try {
       setIsListening(true);
       setTranscribedText('');
-      await Voice.start('en-US');
+      ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        maxAlternatives: 1,
+        continuous: false,
+      });
     } catch (error) {
       console.error('Start listening error:', error);
       setIsListening(false);
@@ -146,7 +150,7 @@ export default function SpeechPracticeScreen({ navigation }: any) {
 
   const stopListening = async () => {
     try {
-      await Voice.stop();
+      ExpoSpeechRecognitionModule.stop();
       setIsListening(false);
     } catch (error) {
       console.error('Stop listening error:', error);
