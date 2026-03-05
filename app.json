@@ -19,6 +19,8 @@
       "buildNumber": "1.0.4",
       "infoPlist": {
         "NSCameraUsageDescription": "AURA needs camera access for facial mimicry training",
+        "NSPhotoLibraryUsageDescription": "AURA may access your photo library only when you choose to select an image for app features.",
+        "NSPhotoLibraryAddUsageDescription": "AURA may save generated training images to your photo library only when you choose to do so.",
         "NSMicrophoneUsageDescription": "AURA needs microphone access for speech practice",
         "NSSpeechRecognitionUsageDescription": "AURA needs speech recognition for speech and conversation practice",
         "NSFaceIDUsageDescription": "AURA uses Face ID for secure sign-in",
