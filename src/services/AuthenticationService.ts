@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 import { User, UserRole, PlayerProgress } from '../types';
 import { BackendAuthService } from './BackendAuthService';
 import { BackendClient } from './BackendClient';
@@ -18,6 +19,7 @@ const SECURE_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
 export class AuthenticationService {
   static async signIn(username: string, password: string): Promise<User> {
     const normalizedUsername = username.trim();
+    let serverAuthenticated = false;
 
     if (!this.isLocalAuthAllowed() && !BackendClient.isConfigured()) {
       throw new Error('Server authentication is required in production.');
@@ -32,8 +34,12 @@ export class AuthenticationService {
         if (response?.token) {
           await BackendAuthService.saveToken(response.token);
         }
+        serverAuthenticated = true;
       } catch (error) {
-        throw new Error('Unable to sign in to server');
+        if (!this.isLocalAuthAllowed()) {
+          throw new Error('Unable to sign in to server');
+        }
+        Logger.warn('Server sign-in failed, falling back to local auth', Logger.fromError(error));
       }
     }
 
@@ -41,7 +47,7 @@ export class AuthenticationService {
     let user = users.find(u => u.username.toLowerCase() === normalizedUsername.toLowerCase());
 
     if (!user) {
-      if (BackendClient.isConfigured()) {
+      if (BackendClient.isConfigured() && serverAuthenticated) {
         user = this.createServerBackedUser(normalizedUsername);
         await this.saveUser(user);
       } else {
@@ -53,7 +59,7 @@ export class AuthenticationService {
       throw new Error('User account is inactive');
     }
 
-    if (!BackendClient.isConfigured()) {
+    if (!BackendClient.isConfigured() || !serverAuthenticated) {
       if (user.passwordSalt) {
         const validPassword = await this.verifyPassword(password, user.passwordSalt, user.passwordHash);
         if (!validPassword) {
@@ -139,7 +145,9 @@ export class AuthenticationService {
     supervisorId?: string,
     options?: { setAsCurrentUser?: boolean }
   ): Promise<User> {
-    if (!this.isLocalAuthAllowed() && !BackendClient.isConfigured()) {
+    const localAuthAllowed = this.isLocalAuthAllowed();
+
+    if (!localAuthAllowed && !BackendClient.isConfigured()) {
       throw new Error('Server registration is required in production.');
     }
 
@@ -189,7 +197,10 @@ export class AuthenticationService {
           await BackendAuthService.saveToken(response.token);
         }
       } catch (error) {
-        throw new Error('Unable to register with server');
+        if (!localAuthAllowed) {
+          throw new Error('Unable to register with server');
+        }
+        Logger.warn('Server registration failed, falling back to local auth', Logger.fromError(error));
       }
     }
 
@@ -456,7 +467,12 @@ export class AuthenticationService {
   }
 
   private static isLocalAuthAllowed(): boolean {
-    return __DEV__;
+    if (__DEV__) return true;
+    const value =
+      Constants.expoConfig?.extra?.allowOfflineAuthInProduction ??
+      (Constants.manifest as { extra?: { allowOfflineAuthInProduction?: boolean } } | null)?.extra
+        ?.allowOfflineAuthInProduction;
+    return value === true;
   }
 
   private static createServerBackedUser(username: string): User {
@@ -645,5 +661,9 @@ export class AuthenticationService {
       parent.id,
       { setAsCurrentUser: false }
     );
+  }
+
+  static isOfflineAuthEnabled(): boolean {
+    return this.isLocalAuthAllowed();
   }
 }

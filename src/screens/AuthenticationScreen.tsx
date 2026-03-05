@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../store/authStore';
+import { AuthenticationService } from '../services/AuthenticationService';
 import { BiometricService } from '../services/BiometricService';
 import { BackendClient } from '../services/BackendClient';
 import { UserRole } from '../types';
@@ -32,7 +33,9 @@ export default function AuthenticationScreen() {
   const [biometricLabel, setBiometricLabel] = useState('Biometric');
   const showDemoLogins = __DEV__;
   const roleOptions = __DEV__ ? Object.values(UserRole) : [UserRole.STUDENT];
-  const requiresBackend = !__DEV__ && !BackendClient.isConfigured();
+  const localAuthAllowed = AuthenticationService.isOfflineAuthEnabled();
+  const requiresBackend = !localAuthAllowed && !BackendClient.isConfigured();
+  const offlineMode = localAuthAllowed && !BackendClient.isConfigured();
 
   useEffect(() => {
     const loadBiometricState = async () => {
@@ -233,6 +236,11 @@ export default function AuthenticationScreen() {
                   Production sign-in requires a configured secure backend URL.
                 </Text>
               )}
+              {offlineMode && (
+                <Text style={styles.offlineNotice}>
+                  Offline auth mode is active. Configure a secure backend URL when available.
+                </Text>
+              )}
               </GlassCard>
             </View>
 
@@ -369,6 +377,14 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
     fontFamily: AURA_FONTS.pixel,
+  },
+  offlineNotice: {
+    color: 'rgba(255, 255, 255, 0.82)',
+    marginTop: 12,
+    textAlign: 'center',
+    fontSize: 12,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   roleRow: {
     flexDirection: 'row',

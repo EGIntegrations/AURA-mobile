@@ -71,7 +71,8 @@
       "eas": {
         "projectId": "de6a7920-284c-40fb-861d-d2d9e28be82b"
       },
-      "backendBaseUrl": ""
+      "backendBaseUrl": "",
+      "allowOfflineAuthInProduction": true
     },
     "owner": "egintegrations"
   }
