@@ -4,3 +4,13 @@ AURA.xcodeproj
 ExpressionClassifier.mlpackage
 keys
 keys/
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.mobileprovision
+*.jks
+*.keystore
+secrets/
+credentials/

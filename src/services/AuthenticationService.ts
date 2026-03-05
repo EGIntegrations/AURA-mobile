@@ -1,42 +1,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
+import * as SecureStore from 'expo-secure-store';
 import { User, UserRole, PlayerProgress } from '../types';
 import { BackendAuthService } from './BackendAuthService';
 import { BackendClient } from './BackendClient';
+import { Logger } from './Logger';
 
 const USERS_KEY = 'aura_users';
 const CURRENT_USER_KEY = 'aura_current_user';
+const USER_CREDENTIALS_PREFIX = 'aura_user_credentials_v1:';
+const PASSWORD_HASH_VERSION = 'v2';
+const PASSWORD_HASH_ITERATIONS = 12000;
+const SECURE_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+};
 
 export class AuthenticationService {
   static async signIn(username: string, password: string): Promise<User> {
-    const users = await this.getAllUsers();
-    let user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    const normalizedUsername = username.trim();
 
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    if (!user.isActive) {
-      throw new Error('User account is inactive');
-    }
-
-    if (user.passwordSalt) {
-      const passwordHash = await this.hashPassword(password, user.passwordSalt);
-      if (passwordHash !== user.passwordHash) {
-        throw new Error('Invalid credentials');
-      }
-    } else {
-      const legacyHash = await this.hashPasswordLegacy(password);
-      if (legacyHash !== user.passwordHash) {
-        throw new Error('Invalid credentials');
-      }
-      user = await this.upgradeLegacyPassword(user, password);
+    if (!this.isLocalAuthAllowed() && !BackendClient.isConfigured()) {
+      throw new Error('Server authentication is required in production.');
     }
 
     if (BackendClient.isConfigured()) {
       try {
         const response = await BackendClient.post<{ token: string }>('/auth/login', {
-          username,
+          username: normalizedUsername,
           password,
         });
         if (response?.token) {
@@ -47,37 +37,37 @@ export class AuthenticationService {
       }
     }
 
-    const updatedUser: User = {
-      ...user,
-      lastLoginAt: new Date(),
-    };
+    const users = await this.getAllUsers();
+    let user = users.find(u => u.username.toLowerCase() === normalizedUsername.toLowerCase());
 
-    await this.persistUser(updatedUser);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(this.serializeUser(updatedUser)));
-
-    return updatedUser;
-  }
-
-  static async signInWithBiometric(username: string): Promise<User> {
-    const user = await this.getUserByUsername(username);
     if (!user) {
-      throw new Error('User not found');
+      if (BackendClient.isConfigured()) {
+        user = this.createServerBackedUser(normalizedUsername);
+        await this.saveUser(user);
+      } else {
+        throw new Error('User not found');
+      }
     }
 
     if (!user.isActive) {
       throw new Error('User account is inactive');
     }
 
-    if (BackendClient.isConfigured()) {
-      try {
-        const response = await BackendClient.post<{ token: string }>('/auth/biometric', {
-          username,
-        });
-        if (response?.token) {
-          await BackendAuthService.saveToken(response.token);
+    if (!BackendClient.isConfigured()) {
+      if (user.passwordSalt) {
+        const validPassword = await this.verifyPassword(password, user.passwordSalt, user.passwordHash);
+        if (!validPassword) {
+          throw new Error('Invalid credentials');
         }
-      } catch (error) {
-        throw new Error('Unable to sign in to server');
+        if (!this.isVersionedHash(user.passwordHash)) {
+          user = await this.upgradePasswordHash(user, password);
+        }
+      } else {
+        const legacyHash = await this.hashPasswordLegacy(password);
+        if (legacyHash !== user.passwordHash) {
+          throw new Error('Invalid credentials');
+        }
+        user = await this.upgradeLegacyPassword(user, password);
       }
     }
 
@@ -87,7 +77,56 @@ export class AuthenticationService {
     };
 
     await this.persistUser(updatedUser);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(this.serializeUser(updatedUser)));
+    await AsyncStorage.setItem(
+      CURRENT_USER_KEY,
+      JSON.stringify(this.serializeUser(updatedUser, { includeCredentials: false }))
+    );
+
+    return updatedUser;
+  }
+
+  static async signInWithBiometric(username: string): Promise<User> {
+    if (!BackendClient.isConfigured()) {
+      throw new Error('Biometric login requires secure server authentication.');
+    }
+
+    const nonce = await this.generateSalt();
+    const timestamp = Date.now();
+    const normalizedUsername = username.trim();
+
+    try {
+      const response = await BackendClient.post<{ token: string }>('/auth/biometric', {
+        username: normalizedUsername,
+        nonce,
+        timestamp,
+      });
+      if (response?.token) {
+        await BackendAuthService.saveToken(response.token);
+      }
+    } catch (error) {
+      throw new Error('Unable to sign in to server');
+    }
+
+    let user = await this.getUserByUsername(normalizedUsername);
+    if (!user) {
+      user = this.createServerBackedUser(normalizedUsername);
+      await this.saveUser(user);
+    }
+
+    if (!user.isActive) {
+      throw new Error('User account is inactive');
+    }
+
+    const updatedUser: User = {
+      ...user,
+      lastLoginAt: new Date(),
+    };
+
+    await this.persistUser(updatedUser);
+    await AsyncStorage.setItem(
+      CURRENT_USER_KEY,
+      JSON.stringify(this.serializeUser(updatedUser, { includeCredentials: false }))
+    );
     return updatedUser;
   }
 
@@ -100,6 +139,11 @@ export class AuthenticationService {
     supervisorId?: string,
     options?: { setAsCurrentUser?: boolean }
   ): Promise<User> {
+    if (!this.isLocalAuthAllowed() && !BackendClient.isConfigured()) {
+      throw new Error('Server registration is required in production.');
+    }
+
+    const sanitizedRole = __DEV__ ? role : UserRole.STUDENT;
     const users = await this.getAllUsers();
     const existing = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
@@ -114,7 +158,7 @@ export class AuthenticationService {
       username,
       email,
       displayName,
-      role,
+      role: sanitizedRole,
       passwordHash,
       passwordSalt,
       isActive: true,
@@ -129,7 +173,7 @@ export class AuthenticationService {
         preferredVoice: 'alloy',
         theme: 'dark',
       },
-      permissions: this.getDefaultPermissions(role),
+      permissions: this.getDefaultPermissions(sanitizedRole),
     };
 
     if (BackendClient.isConfigured()) {
@@ -138,7 +182,7 @@ export class AuthenticationService {
           username,
           email,
           displayName,
-          role,
+          role: sanitizedRole,
           password,
         });
         if (response?.token) {
@@ -151,7 +195,10 @@ export class AuthenticationService {
 
     await this.saveUser(newUser);
     if (options?.setAsCurrentUser !== false) {
-      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(this.serializeUser(newUser)));
+      await AsyncStorage.setItem(
+        CURRENT_USER_KEY,
+        JSON.stringify(this.serializeUser(newUser, { includeCredentials: false }))
+      );
     }
 
     if (supervisorId) {
@@ -169,7 +216,8 @@ export class AuthenticationService {
   static async getCurrentUser(): Promise<User | null> {
     const data = await AsyncStorage.getItem(CURRENT_USER_KEY);
     if (!data) return null;
-    return this.deserializeUser(JSON.parse(data));
+    const currentUser = this.deserializeUser(JSON.parse(data));
+    return await this.hydrateCredentials(currentUser);
   }
 
   static async updateUserProgress(userId: string, progress: PlayerProgress): Promise<void> {
@@ -178,13 +226,19 @@ export class AuthenticationService {
 
     if (userIndex >= 0) {
       users[userIndex].progress = progress;
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users.map(u => this.serializeUser(u))));
+      await AsyncStorage.setItem(
+        USERS_KEY,
+        JSON.stringify(users.map(u => this.serializeUser(u, { includeCredentials: false })))
+      );
 
       // Update current user if it's the same user
       const currentUser = await this.getCurrentUser();
       if (currentUser && currentUser.id === userId) {
         currentUser.progress = progress;
-        await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(this.serializeUser(currentUser)));
+        await AsyncStorage.setItem(
+          CURRENT_USER_KEY,
+          JSON.stringify(this.serializeUser(currentUser, { includeCredentials: false }))
+        );
       }
     }
   }
@@ -193,7 +247,8 @@ export class AuthenticationService {
     const data = await AsyncStorage.getItem(USERS_KEY);
     if (!data) return [];
     const serialized = JSON.parse(data);
-    return serialized.map((u: any) => this.deserializeUser(u));
+    const users = serialized.map((u: any) => this.deserializeUser(u));
+    return await Promise.all(users.map((user: User) => this.hydrateCredentials(user)));
   }
 
   static async getUserByUsername(username: string): Promise<User | null> {
@@ -218,21 +273,29 @@ export class AuthenticationService {
     };
 
     users[supervisorIndex] = updatedSupervisor;
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users.map(u => this.serializeUser(u))));
+    await AsyncStorage.setItem(
+      USERS_KEY,
+      JSON.stringify(users.map(u => this.serializeUser(u, { includeCredentials: false })))
+    );
 
     const currentUser = await this.getCurrentUser();
     if (currentUser && currentUser.id === supervisorId) {
       await AsyncStorage.setItem(
         CURRENT_USER_KEY,
-        JSON.stringify(this.serializeUser(updatedSupervisor))
+        JSON.stringify(this.serializeUser(updatedSupervisor, { includeCredentials: false }))
       );
     }
   }
 
   private static async saveUser(user: User): Promise<void> {
     const users = await this.getAllUsers();
-    users.push(user);
-    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users.map(u => this.serializeUser(u))));
+    const withoutSameId = users.filter(existing => existing.id !== user.id);
+    withoutSameId.push(user);
+    await this.persistCredentials(user);
+    await AsyncStorage.setItem(
+      USERS_KEY,
+      JSON.stringify(withoutSameId.map(u => this.serializeUser(u, { includeCredentials: false })))
+    );
   }
 
   private static async persistUser(user: User): Promise<void> {
@@ -240,16 +303,54 @@ export class AuthenticationService {
     const index = users.findIndex(u => u.id === user.id);
     if (index >= 0) {
       users[index] = user;
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users.map(u => this.serializeUser(u))));
+      await this.persistCredentials(user);
+      await AsyncStorage.setItem(
+        USERS_KEY,
+        JSON.stringify(users.map(u => this.serializeUser(u, { includeCredentials: false })))
+      );
     }
   }
 
   private static async hashPassword(password: string, salt: string): Promise<string> {
-    const salted = `${password}::${salt}`;
-    return await Crypto.digestStringAsync(
+    let digest = `${password}::${salt}`;
+    for (let i = 0; i < PASSWORD_HASH_ITERATIONS; i += 1) {
+      digest = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        `${digest}::${salt}::${i}`
+      );
+    }
+    return `${PASSWORD_HASH_VERSION}$${PASSWORD_HASH_ITERATIONS}$${digest}`;
+  }
+
+  private static async verifyPassword(
+    password: string,
+    salt: string,
+    storedHash: string
+  ): Promise<boolean> {
+    if (this.isVersionedHash(storedHash)) {
+      const [version, iterationText, expectedHash] = storedHash.split('$');
+      const iterations = Number(iterationText) || PASSWORD_HASH_ITERATIONS;
+      if (version !== PASSWORD_HASH_VERSION || !expectedHash) return false;
+
+      let digest = `${password}::${salt}`;
+      for (let i = 0; i < iterations; i += 1) {
+        digest = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          `${digest}::${salt}::${i}`
+        );
+      }
+      return digest === expectedHash;
+    }
+
+    const legacyCurrentHash = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      salted
+      `${password}::${salt}`
     );
+    return legacyCurrentHash === storedHash;
+  }
+
+  private static isVersionedHash(hash: string): boolean {
+    return typeof hash === 'string' && hash.startsWith(`${PASSWORD_HASH_VERSION}$`);
   }
 
   private static async hashPasswordLegacy(password: string): Promise<string> {
@@ -273,6 +374,16 @@ export class AuthenticationService {
     const updatedUser: User = {
       ...user,
       passwordSalt,
+      passwordHash,
+    };
+    await this.persistUser(updatedUser);
+    return updatedUser;
+  }
+
+  private static async upgradePasswordHash(user: User, password: string): Promise<User> {
+    const passwordHash = await this.hashPassword(password, user.passwordSalt);
+    const updatedUser: User = {
+      ...user,
       passwordHash,
     };
     await this.persistUser(updatedUser);
@@ -344,10 +455,92 @@ export class AuthenticationService {
     }
   }
 
+  private static isLocalAuthAllowed(): boolean {
+    return __DEV__;
+  }
+
+  private static createServerBackedUser(username: string): User {
+    return {
+      id: this.generateId(),
+      username,
+      email: '',
+      displayName: username,
+      role: UserRole.STUDENT,
+      passwordHash: '',
+      passwordSalt: '',
+      isActive: true,
+      supervisedUserIds: [],
+      progress: this.createEmptyProgress(),
+      createdAt: new Date(),
+      lastLoginAt: new Date(),
+      settings: {
+        notificationsEnabled: true,
+        soundEnabled: true,
+        preferredVoice: 'alloy',
+        theme: 'dark',
+      },
+      permissions: this.getDefaultPermissions(UserRole.STUDENT),
+    };
+  }
+
+  private static async getCredentials(userId: string): Promise<{ passwordHash: string; passwordSalt: string } | null> {
+    const serialized = await SecureStore.getItemAsync(
+      `${USER_CREDENTIALS_PREFIX}${userId}`,
+      SECURE_STORE_OPTIONS
+    );
+    if (!serialized) return null;
+    try {
+      const parsed = JSON.parse(serialized);
+      if (!parsed.passwordHash || !parsed.passwordSalt) return null;
+      return {
+        passwordHash: parsed.passwordHash,
+        passwordSalt: parsed.passwordSalt,
+      };
+    } catch (error) {
+      Logger.warn('Credential parse error', Logger.fromError(error));
+      return null;
+    }
+  }
+
+  private static async persistCredentials(user: User): Promise<void> {
+    if (!user.passwordHash || !user.passwordSalt) return;
+    await SecureStore.setItemAsync(
+      `${USER_CREDENTIALS_PREFIX}${user.id}`,
+      JSON.stringify({
+        passwordHash: user.passwordHash,
+        passwordSalt: user.passwordSalt,
+      }),
+      SECURE_STORE_OPTIONS
+    );
+  }
+
+  private static async hydrateCredentials(user: User): Promise<User> {
+    const secureCredentials = await this.getCredentials(user.id);
+    if (secureCredentials) {
+      return {
+        ...user,
+        ...secureCredentials,
+      };
+    }
+
+    // One-time migration path from old AsyncStorage payloads with embedded credentials.
+    if (user.passwordHash && user.passwordSalt) {
+      await this.persistCredentials(user);
+    }
+
+    return user;
+  }
+
   // Serialize Date objects to ISO strings for storage
-  private static serializeUser(user: User): any {
+  private static serializeUser(
+    user: User,
+    options: { includeCredentials?: boolean } = {}
+  ): any {
+    const includeCredentials = options.includeCredentials ?? false;
     return {
       ...user,
+      passwordHash: includeCredentials ? user.passwordHash : '',
+      passwordSalt: includeCredentials ? user.passwordSalt : '',
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString(),
       progress: {

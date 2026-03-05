@@ -12,9 +12,11 @@ import GlassCard from '../components/GlassCard';
 import { AudioService } from '../services/AudioService';
 import { OpenAIService } from '../services/OpenAIService';
 import { UserMonitoringService } from '../services/UserMonitoringService';
+import { ConsentService } from '../services/ConsentService';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import { Logger } from '../services/Logger';
 
 const EMOTIONS = ['Happy', 'Sad', 'Angry', 'Surprised', 'Fear', 'Neutral'];
 
@@ -26,6 +28,7 @@ export default function VisionTrainingScreen({ navigation }: any) {
   const [isTraining, setIsTraining] = useState(false);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState('');
+  const [hasAIConsent, setHasAIConsent] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const cameraFacing: CameraType = 'front';
@@ -34,6 +37,8 @@ export default function VisionTrainingScreen({ navigation }: any) {
     const requestPermissions = async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === 'granted');
+      const consent = await ConsentService.hasAIProcessingConsent();
+      setHasAIConsent(consent);
     };
     requestPermissions();
     return () => {
@@ -42,6 +47,10 @@ export default function VisionTrainingScreen({ navigation }: any) {
   }, []);
 
   const startTraining = () => {
+    if (!hasAIConsent) {
+      setFeedback('AI consent required. Enable in Settings first.');
+      return;
+    }
     UserMonitoringService.resetSession();
     setIsTraining(true);
     intervalRef.current = setInterval(detectEmotion, 2000);
@@ -64,10 +73,11 @@ export default function VisionTrainingScreen({ navigation }: any) {
         base64: true,
       });
 
-      if (!photo.base64) return;
+      const imageData = photo?.base64;
+      if (!imageData) return;
 
       const response = await OpenAIService.analyzeImage(
-        photo.base64,
+        imageData,
         'What emotion is this person expressing? Answer with one word: Happy, Sad, Angry, Surprised, Fear, or Neutral.'
       );
 
@@ -86,7 +96,7 @@ export default function VisionTrainingScreen({ navigation }: any) {
         setFeedback('Keep trying');
       }
     } catch (error) {
-      console.error('Vision training error:', error);
+      Logger.warn('Vision training detection failed', Logger.fromError(error));
       setFeedback('Check your connection and try again.');
     }
   };

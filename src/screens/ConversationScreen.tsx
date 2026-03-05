@@ -23,6 +23,8 @@ import {
   ConversationScenario,
   CONVERSATION_SCENARIOS,
 } from '../services/ConversationService';
+import { ConsentService } from '../services/ConsentService';
+import { Logger } from '../services/Logger';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { ConversationSummary } from '../types';
@@ -41,6 +43,9 @@ export default function ConversationScreen({ navigation }: any) {
   const [isListening, setIsListening] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [assistantSource, setAssistantSource] = useState<'ai' | 'fallback'>('ai');
+  const [hasAIConsent, setHasAIConsent] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
   const conversationService = useRef(new ConversationService());
   const scrollViewRef = useRef<ScrollView>(null);
   const startTimeRef = useRef(Date.now());
@@ -63,7 +68,7 @@ export default function ConversationScreen({ navigation }: any) {
   });
 
   useSpeechRecognitionEvent('error', (event) => {
-    console.error('Conversation speech error:', event.error);
+    Logger.warn('Conversation speech error', String(event.error));
     setIsListening(false);
   });
 
@@ -71,6 +76,8 @@ export default function ConversationScreen({ navigation }: any) {
     const setupVoice = async () => {
       await Audio.requestPermissionsAsync();
       await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      const consent = await ConsentService.hasAIProcessingConsent();
+      setHasAIConsent(consent);
     };
     setupVoice();
   }, []);
@@ -86,6 +93,7 @@ export default function ConversationScreen({ navigation }: any) {
 
     const openingMessage = await conversationService.current.startConversation(scenario);
     setMessages([openingMessage]);
+    setAssistantSource(conversationService.current.getLastAssistantSource());
 
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -93,11 +101,21 @@ export default function ConversationScreen({ navigation }: any) {
   };
 
   const handleScenarioSelect = async (scenario: ConversationScenario) => {
+    if (!hasAIConsent) {
+      setShowConsentModal(true);
+      return;
+    }
     if (scenario.topic === 'social_greeting') {
       setModePickerScenario(scenario);
       return;
     }
     await startScenario(scenario, 'text');
+  };
+
+  const handleGrantConsent = async () => {
+    await ConsentService.setAIProcessingConsent(true);
+    setHasAIConsent(true);
+    setShowConsentModal(false);
   };
 
   const handleModeSelect = async (mode: 'text' | 'talk') => {
@@ -119,12 +137,13 @@ export default function ConversationScreen({ navigation }: any) {
       await conversationService.current.processUserMessage(userText);
       const updatedMessages = conversationService.current.getMessages();
       setMessages([...updatedMessages]);
+      setAssistantSource(conversationService.current.getLastAssistantSource());
 
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      console.error('Conversation error:', error);
+      Logger.warn('Conversation error', Logger.fromError(error));
     } finally {
       setIsLoading(false);
     }
@@ -145,7 +164,7 @@ export default function ConversationScreen({ navigation }: any) {
         continuous: false,
       });
     } catch (error) {
-      console.error('Start listening error:', error);
+      Logger.warn('Conversation start listening failed', Logger.fromError(error));
       setIsListening(false);
     }
   };
@@ -154,7 +173,7 @@ export default function ConversationScreen({ navigation }: any) {
     try {
       ExpoSpeechRecognitionModule.stop();
     } catch (error) {
-      console.error('Stop listening error:', error);
+      Logger.warn('Conversation stop listening failed', Logger.fromError(error));
     } finally {
       setIsListening(false);
     }
@@ -246,6 +265,31 @@ export default function ConversationScreen({ navigation }: any) {
             </GlassCard>
           </View>
         </Modal>
+
+        <Modal visible={showConsentModal} transparent animationType="fade">
+          <View style={styles.modeOverlay}>
+            <GlassCard style={styles.modeCard}>
+              <Text style={styles.modeTitle}>AI Consent Required</Text>
+              <Text style={styles.modeSubtitle}>
+                Conversation practice sends text/audio to AI services for responses.
+              </Text>
+              <View style={styles.modeButtons}>
+                <TouchableOpacity
+                  style={styles.modeButtonPrimary}
+                  onPress={handleGrantConsent}
+                >
+                  <Text style={styles.modeButtonText}>I Consent</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.modeButtonSecondary}
+                  onPress={() => setShowConsentModal(false)}
+                >
+                  <Text style={styles.modeButtonTextSecondary}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </GlassCard>
+          </View>
+        </Modal>
       </View>
     );
   }
@@ -270,6 +314,12 @@ export default function ConversationScreen({ navigation }: any) {
           </View>
           <View style={{ width: 40 }} />
         </View>
+
+        {assistantSource === 'fallback' && (
+          <View style={styles.offlineBanner}>
+            <Text style={styles.offlineBannerText}>Using offline coach mode</Text>
+          </View>
+        )}
 
         {/* Messages */}
         <ScrollView
@@ -557,6 +607,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     gap: 12,
+  },
+  offlineBanner: {
+    marginHorizontal: 24,
+    marginBottom: 8,
+    backgroundColor: 'rgba(248, 113, 113, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.45)',
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  offlineBannerText: {
+    color: '#fecaca',
+    textAlign: 'center',
+    fontSize: 12,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
   },
   talkContainer: {
     alignItems: 'center',

@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../store/authStore';
 import { BiometricService } from '../services/BiometricService';
+import { BackendClient } from '../services/BackendClient';
 import { UserRole } from '../types';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
@@ -30,9 +31,8 @@ export default function AuthenticationScreen() {
   const [showBiometric, setShowBiometric] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState('Biometric');
   const showDemoLogins = __DEV__;
-  const roleOptions = __DEV__
-    ? Object.values(UserRole)
-    : [UserRole.STUDENT, UserRole.PARENT, UserRole.TEACHER];
+  const roleOptions = __DEV__ ? Object.values(UserRole) : [UserRole.STUDENT];
+  const requiresBackend = !__DEV__ && !BackendClient.isConfigured();
 
   useEffect(() => {
     const loadBiometricState = async () => {
@@ -228,6 +228,11 @@ export default function AuthenticationScreen() {
               )}
 
               {error && <Text style={styles.error}>{error}</Text>}
+              {requiresBackend && (
+                <Text style={styles.error}>
+                  Production sign-in requires a configured secure backend URL.
+                </Text>
+              )}
               </GlassCard>
             </View>
 

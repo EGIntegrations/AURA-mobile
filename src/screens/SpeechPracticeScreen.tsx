@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Image,
   Modal,
-  Alert,
+  Switch,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import {
   useSpeechRecognitionEvent,
   ExpoSpeechRecognitionModule,
 } from 'expo-speech-recognition';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { ImageDatasetService } from '../services/ImageDatasetService';
 import { AudioService } from '../services/AudioService';
@@ -21,42 +22,62 @@ import { ProgressionService } from '../services/ProgressionService';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
-import { GameQuestion, ALL_EMOTIONS, SpeechPracticeResult } from '../types';
+import { GameQuestion, ALL_EMOTIONS, SpeechPracticeResult, ScoreSummary } from '../types';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import { buildScoreSummary, formatImprovementText } from '../utils/sessionSummary';
+import { Logger } from '../services/Logger';
 
 const MAX_PROMPTS = 6;
+const STORAGE_KEY_SPEECH_INSTRUCTIONS = '@speech_practice_skip_instructions';
+
+type PracticeState = 'idle' | 'listening' | 'processing' | 'waiting-next' | 'complete';
 
 export default function SpeechPracticeScreen({ navigation }: any) {
   const { currentUser, updateUserProgress } = useAuthStore();
+  const insets = useSafeAreaInsets();
+
   const [showingInstructions, setShowingInstructions] = useState(true);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<GameQuestion | null>(null);
   const [questionsCompleted, setQuestionsCompleted] = useState(0);
   const [score, setScore] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [isListening, setIsListening] = useState(false);
   const [transcribedText, setTranscribedText] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [isCorrect, setIsCorrect] = useState(false);
   const [showingSummary, setShowingSummary] = useState(false);
+  const [summary, setSummary] = useState<ScoreSummary | null>(null);
+  const [practiceState, setPracticeState] = useState<PracticeState>('idle');
+
+  const hasTranscriptRef = useRef(false);
+  const isProcessingRef = useRef(false);
+  const waitingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousScoreRef = useRef<number | null>(null);
 
   useSpeechRecognitionEvent('result', (event) => {
-    if (event.results[0]?.transcript) {
-      const text = event.results[0].transcript;
-      setTranscribedText(text);
+    const text = event.results[0]?.transcript || '';
+    if (!text || practiceState !== 'listening') return;
 
-      // Try to recognize emotion
-      const recognizedEmotion = recognizeEmotionFromText(text);
-      if (recognizedEmotion) {
-        processVoiceAnswer(recognizedEmotion);
-      }
+    hasTranscriptRef.current = true;
+    setTranscribedText(text);
+
+    const recognizedEmotion = recognizeEmotionFromText(text);
+    processVoiceAnswer(recognizedEmotion || '');
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    if (practiceState === 'listening' && !hasTranscriptRef.current && !isProcessingRef.current) {
+      processVoiceAnswer('');
     }
   });
 
   useSpeechRecognitionEvent('error', (event) => {
-    console.error('Speech error:', event.error);
-    setIsListening(false);
+    Logger.warn('Speech recognition error', String(event.error));
+    if (practiceState === 'listening' && !isProcessingRef.current) {
+      processVoiceAnswer('');
+    }
   });
 
   useEffect(() => {
@@ -64,13 +85,23 @@ export default function SpeechPracticeScreen({ navigation }: any) {
       try {
         await Audio.requestPermissionsAsync();
         await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+
+        const skipInstructions = await AsyncStorage.getItem(STORAGE_KEY_SPEECH_INSTRUCTIONS);
+        if (skipInstructions === 'true') {
+          setShowingInstructions(false);
+          startPracticeSession();
+        }
       } catch (error) {
-        console.error('Voice setup error:', error);
+        Logger.warn('Speech setup failed', Logger.fromError(error));
       }
     };
 
+    previousScoreRef.current = currentUser?.progress.speechPracticeHistory[0]?.score ?? null;
     setupVoice();
+
     return () => {
+      if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current);
+      stopListening();
       AudioService.stopSpeaking();
     };
   }, []);
@@ -78,7 +109,6 @@ export default function SpeechPracticeScreen({ navigation }: any) {
   const recognizeEmotionFromText = (text: string): string | null => {
     const lowerText = text.toLowerCase();
 
-    // Emotion synonyms mapping
     const emotionMap: Record<string, string[]> = {
       happy: ['happy', 'joy', 'joyful', 'glad', 'cheerful', 'pleased'],
       sad: ['sad', 'unhappy', 'sorrowful', 'upset', 'down', 'blue'],
@@ -89,7 +119,7 @@ export default function SpeechPracticeScreen({ navigation }: any) {
     };
 
     for (const [emotion, synonyms] of Object.entries(emotionMap)) {
-      if (synonyms.some(syn => lowerText.includes(syn))) {
+      if (synonyms.some((syn) => lowerText.includes(syn))) {
         return emotion.charAt(0).toUpperCase() + emotion.slice(1);
       }
     }
@@ -97,44 +127,61 @@ export default function SpeechPracticeScreen({ navigation }: any) {
     return null;
   };
 
-  const startPractice = () => {
+  const startPractice = async () => {
+    if (dontShowAgain) {
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY_SPEECH_INSTRUCTIONS, 'true');
+      } catch (error) {
+        Logger.warn('Speech preference save failed', Logger.fromError(error));
+      }
+    }
+
     setShowingInstructions(false);
-    resetSession();
-    loadNextQuestion();
+    startPracticeSession();
   };
 
-  const resetSession = () => {
-    setCurrentQuestion(null);
+  const startPracticeSession = () => {
     setQuestionsCompleted(0);
     setScore(0);
     setCorrectAnswers(0);
     setTranscribedText('');
     setShowFeedback(false);
-    setIsListening(false);
+    setShowingSummary(false);
+    setSummary(null);
+    setPracticeState('idle');
+    loadNextQuestion();
   };
 
   const loadNextQuestion = () => {
     if (!currentUser) return;
 
-    const unlockedEmotions = getUnlockedEmotions(currentUser.progress.currentLevel);
+    const unlockedEmotions = ProgressionService.getUnlockedEmotions(currentUser.progress.currentLevel);
     const randomEmotion = unlockedEmotions[Math.floor(Math.random() * unlockedEmotions.length)];
 
     const questions = ImageDatasetService.loadImagesForEmotion(randomEmotion);
-    if (questions.length > 0) {
-      const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-      setCurrentQuestion(randomQuestion);
-      setTranscribedText('');
-      setShowFeedback(false);
-    }
+    const randomQuestion = questions[Math.floor(Math.random() * questions.length)] || null;
+
+    setCurrentQuestion(randomQuestion);
+    setTranscribedText('');
+    setShowFeedback(false);
+
+    waitAndListen(350);
   };
 
-  const getUnlockedEmotions = (level: number): string[] => {
-    return ProgressionService.getUnlockedEmotions(level);
+  const waitAndListen = (delayMs: number) => {
+    if (waitingTimeoutRef.current) clearTimeout(waitingTimeoutRef.current);
+    isProcessingRef.current = false;
+    setPracticeState('waiting-next');
+
+    waitingTimeoutRef.current = setTimeout(() => {
+      startListening();
+    }, delayMs);
   };
 
   const startListening = async () => {
     try {
-      setIsListening(true);
+      hasTranscriptRef.current = false;
+      setPracticeState('listening');
       setTranscribedText('');
       ExpoSpeechRecognitionModule.start({
         lang: 'en-US',
@@ -143,66 +190,86 @@ export default function SpeechPracticeScreen({ navigation }: any) {
         continuous: false,
       });
     } catch (error) {
-      console.error('Start listening error:', error);
-      setIsListening(false);
+      Logger.warn('Speech start listening failed', Logger.fromError(error));
+      setPracticeState('processing');
+      processVoiceAnswer('');
     }
   };
 
   const stopListening = async () => {
     try {
       ExpoSpeechRecognitionModule.stop();
-      setIsListening(false);
     } catch (error) {
-      console.error('Stop listening error:', error);
+      Logger.warn('Speech stop listening failed', Logger.fromError(error));
     }
   };
 
-  const processVoiceAnswer = (answer: string) => {
-    if (questionsCompleted >= MAX_PROMPTS || !currentQuestion) return;
+  const processVoiceAnswer = async (answer: string) => {
+    if (!currentQuestion || isProcessingRef.current) return;
 
-    stopListening();
+    isProcessingRef.current = true;
+    setPracticeState('processing');
+    await stopListening();
 
     const normalizedAnswer = answer.trim();
-    const isMatch = normalizedAnswer.toLowerCase() === currentQuestion.correctEmotion.toLowerCase();
+    const isMatch =
+      normalizedAnswer.length > 0 &&
+      normalizedAnswer.toLowerCase() === currentQuestion.correctEmotion.toLowerCase();
 
     setIsCorrect(isMatch);
-    setFeedbackMessage(isMatch ? 'Correct!' : `That was ${currentQuestion.correctEmotion}`);
+    setFeedbackMessage(
+      isMatch
+        ? 'Correct!'
+        : normalizedAnswer
+        ? `That was ${currentQuestion.correctEmotion}`
+        : `No voice match. Answer: ${currentQuestion.correctEmotion}`
+    );
+
+    const updatedCorrect = isMatch ? correctAnswers + 1 : correctAnswers;
+    const updatedScore = isMatch ? score + 100 : Math.max(score - 25, 0);
+    const updatedCompleted = questionsCompleted + 1;
 
     if (isMatch) {
-      setCorrectAnswers(prev => prev + 1);
-      setScore(prev => prev + 100);
-      AudioService.speak('Correct! Great job!');
+      setCorrectAnswers(updatedCorrect);
+      setScore(updatedScore);
+      await AudioService.playFeedback(true, currentQuestion.correctEmotion);
     } else {
-      setScore(prev => Math.max(prev - 25, 0));
-      AudioService.speak(`Not quite. The answer was ${currentQuestion.correctEmotion}`);
+      setScore(updatedScore);
+      await AudioService.playFeedback(false, currentQuestion.correctEmotion);
     }
 
-    setQuestionsCompleted(prev => prev + 1);
+    setQuestionsCompleted(updatedCompleted);
     setShowFeedback(true);
 
-    setTimeout(() => {
-      setShowFeedback(false);
-      if (questionsCompleted + 1 < MAX_PROMPTS) {
+    if (updatedCompleted < MAX_PROMPTS) {
+      waitingTimeoutRef.current = setTimeout(() => {
+        setShowFeedback(false);
         loadNextQuestion();
-      } else {
-        finalizePractice();
-      }
-    }, 1400);
+      }, 1100);
+    } else {
+      waitingTimeoutRef.current = setTimeout(async () => {
+        await finalizePractice(updatedScore, updatedCorrect);
+      }, 1100);
+    }
   };
 
-  const finalizePractice = async () => {
+  const finalizePractice = async (finalScore: number, finalCorrect: number) => {
     if (!currentUser) return;
+
+    isProcessingRef.current = false;
+    setPracticeState('complete');
+    await stopListening();
 
     const result: SpeechPracticeResult = {
       id: `speech-${Date.now()}`,
       timestamp: new Date(),
       targetEmotion: currentQuestion?.correctEmotion || '',
       recognizedText: transcribedText,
-      isCorrect: isCorrect,
+      isCorrect,
       confidenceScore: 0.85,
       totalPrompts: MAX_PROMPTS,
-      correctResponses: correctAnswers,
-      score,
+      correctResponses: finalCorrect,
+      score: finalScore,
     };
 
     const updatedProgress = {
@@ -211,12 +278,15 @@ export default function SpeechPracticeScreen({ navigation }: any) {
     };
     const progressed = ProgressionService.applyProgression(updatedProgress);
     await updateUserProgress(progressed);
+
+    await AudioService.playSessionComplete();
+    setSummary(buildScoreSummary(finalScore, previousScoreRef.current));
+    setShowFeedback(false);
     setShowingSummary(true);
   };
 
   const handleReplay = () => {
-    setShowingSummary(false);
-    startPractice();
+    startPracticeSession();
   };
 
   const handleDone = () => {
@@ -227,33 +297,48 @@ export default function SpeechPracticeScreen({ navigation }: any) {
     return (
       <View style={styles.container}>
         <AuraBackground />
-        <View style={styles.instructionsContainer}>
-          <GlassCard>
+
+        <View
+          style={[
+            styles.instructionsContainer,
+            { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 10 },
+          ]}
+        >
+          <View style={styles.instructionsHeaderRow}>
+            <TouchableOpacity style={styles.instructionsBackButton} onPress={handleDone}>
+              <Text style={styles.instructionsBackText}>← Back</Text>
+            </TouchableOpacity>
+          </View>
+
+          <GlassCard cornerRadius={22} padding={16}>
             <View style={styles.instructionsContent}>
               <Text style={styles.instructionIcon}>🎤</Text>
-              <Text style={styles.instructionTitle}>Voice Practice</Text>
-              <Text style={styles.instructionSubtitle}>Use your voice to identify emotions</Text>
+              <Text style={styles.instructionTitle}>Speech Practice</Text>
+              <Text style={styles.instructionSubtitle}>Say the emotion you see. We auto-listen each round.</Text>
             </View>
           </GlassCard>
 
-          <GlassCard>
+          <GlassCard cornerRadius={22} padding={16}>
             <View style={styles.howItWorks}>
               <Text style={styles.howItWorksTitle}>How it works</Text>
-              <InstructionRow icon="1️⃣" text="Look closely at the expression" />
-              <InstructionRow icon="2️⃣" text="Tap the microphone and say the emotion" />
-              <InstructionRow icon="3️⃣" text="We listen and give voice feedback" />
+              <InstructionRow icon="1️⃣" text="Look at the emotion image." />
+              <InstructionRow icon="2️⃣" text="Speak the emotion out loud." />
+              <InstructionRow icon="3️⃣" text="Next round starts automatically." />
+              <InstructionRow icon="4️⃣" text="Review your score + improvement." />
             </View>
           </GlassCard>
 
-          <GlassButton
-            title="Start Practice"
-            onPress={startPractice}
-            customStyle={styles.startButton}
-          />
+          <View style={styles.toggleContainer}>
+            <Text style={styles.toggleText}>Don't show this again</Text>
+            <Switch
+              value={dontShowAgain}
+              onValueChange={setDontShowAgain}
+              trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: AURA_COLORS.accent }}
+              thumbColor={dontShowAgain ? 'white' : 'rgba(255, 255, 255, 0.8)'}
+            />
+          </View>
 
-          <TouchableOpacity style={styles.backButton} onPress={handleDone}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
+          <GlassButton title="Start Practice" onPress={startPractice} customStyle={styles.startButton} />
         </View>
       </View>
     );
@@ -263,110 +348,74 @@ export default function SpeechPracticeScreen({ navigation }: any) {
     <View style={styles.container}>
       <AuraBackground />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          {/* Header */}
-          <GlassCard>
-            <View style={styles.header}>
+      <View style={[styles.mainContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}> 
+        <View style={styles.headerRow}>
+          <GlassCard cornerRadius={20} padding={14} style={styles.headerCard}>
+            <View style={styles.headerInner}>
               <View>
                 <Text style={styles.headerLabel}>Speech Practice</Text>
-                <Text style={styles.headerSubtitle}>Say the emotion you see</Text>
+                <Text style={styles.headerSubtext}>{questionsCompleted}/{MAX_PROMPTS}</Text>
               </View>
               <View style={styles.headerRight}>
-                <Text style={styles.headerLabel}>Score: {score}</Text>
-                <Text style={styles.headerSubtitle}>{questionsCompleted}/{MAX_PROMPTS}</Text>
+                <Text style={styles.headerLabel}>Score {score}</Text>
+                <Text style={styles.headerSubtext}>{practiceState === 'listening' ? 'Listening' : practiceState === 'processing' ? 'Checking' : 'Ready'}</Text>
               </View>
             </View>
           </GlassCard>
 
-          {/* Progress */}
-          <GlassCard>
-            <View style={styles.progressSection}>
-              <Text style={styles.progressLabel}>Progress</Text>
-              <View style={styles.progressBar}>
-                <View
-                  style={[styles.progressFill, { width: `${(questionsCompleted / MAX_PROMPTS) * 100}%` }]}
-                />
-              </View>
-              <Text style={styles.progressText}>{questionsCompleted} of {MAX_PROMPTS} prompts</Text>
-            </View>
-          </GlassCard>
+          <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+            <Text style={styles.doneButtonText}>✕ Done</Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* Question Image */}
-          {currentQuestion && (
-            <GlassCard>
-              {currentQuestion.imageData ? (
-                <Image
-                  source={{ uri: currentQuestion.imageData }}
-                  style={styles.questionImage}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View style={styles.placeholderImage}>
-                  <Text style={styles.placeholderEmoji}>
-                    {ALL_EMOTIONS.find(e => e.name === currentQuestion.correctEmotion)?.emoji || '😐'}
-                  </Text>
-                </View>
-              )}
-            </GlassCard>
-          )}
+        <GlassCard cornerRadius={20} padding={12} style={styles.progressCard}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${(questionsCompleted / MAX_PROMPTS) * 100}%` }]} />
+          </View>
+        </GlassCard>
 
-          {/* Microphone Controls */}
-          <GlassCard>
-            {isListening ? (
-              <View style={styles.listeningContainer}>
-                <Text style={styles.micIcon}>🎤</Text>
-                <Text style={styles.listeningText}>Listening…</Text>
-                <GlassButton
-                  title="Stop"
-                  onPress={stopListening}
-                  style="danger"
-                  customStyle={styles.stopButton}
-                />
-              </View>
+        <View style={styles.practiceArea}>
+          <GlassCard cornerRadius={24} padding={12} style={styles.questionCard}>
+            {currentQuestion?.imageData ? (
+              <Image source={{ uri: currentQuestion.imageData }} style={styles.questionImage} resizeMode="contain" />
             ) : (
-              <GlassButton
-                title="🎤 Tap to Speak"
-                onPress={startListening}
-                customStyle={styles.micButton}
-              />
-            )}
-
-            {transcribedText && (
-              <View style={styles.transcriptionBox}>
-                <Text style={styles.transcriptionLabel}>You said</Text>
-                <Text style={styles.transcriptionText}>"{transcribedText}"</Text>
+              <View style={styles.placeholderImage}>
+                <Text style={styles.placeholderEmoji}>
+                  {ALL_EMOTIONS.find((emotion) => emotion.name === currentQuestion?.correctEmotion)?.emoji || '😐'}
+                </Text>
               </View>
             )}
           </GlassCard>
 
-          {/* Fallback Buttons */}
-          <GlassCard>
-            <View style={styles.fallbackContainer}>
-              <Text style={styles.fallbackLabel}>Or pick an emotion</Text>
-              <View style={styles.emotionGrid}>
-                {ALL_EMOTIONS.map(emotion => (
-                  <TouchableOpacity
-                    key={emotion.id}
-                    style={styles.emotionButton}
-                    onPress={() => processVoiceAnswer(emotion.name)}
-                  >
-                    <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
-                    <Text style={styles.emotionName}>{emotion.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+          <GlassCard cornerRadius={24} padding={12} style={styles.voiceCard}>
+            <View style={styles.voiceStatusBlock}>
+              <Text style={styles.voiceLabel}>
+                {practiceState === 'listening'
+                  ? 'Listening now…'
+                  : practiceState === 'processing'
+                  ? 'Processing response…'
+                  : 'Auto-starting next prompt…'}
+              </Text>
+              <Text style={styles.transcriptText}>{transcribedText ? `"${transcribedText}"` : 'Speak naturally when ready.'}</Text>
+            </View>
+
+            <View style={styles.emotionGrid}>
+              {ALL_EMOTIONS.map((emotion) => (
+                <TouchableOpacity
+                  key={emotion.id}
+                  style={styles.emotionButton}
+                  onPress={() => processVoiceAnswer(emotion.name)}
+                  disabled={practiceState === 'processing'}
+                >
+                  <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
+                  <Text style={styles.emotionName}>{emotion.name}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </GlassCard>
         </View>
-      </ScrollView>
+      </View>
 
-      {/* Exit Button */}
-      <TouchableOpacity style={styles.exitButton} onPress={handleDone}>
-        <Text style={styles.exitButtonText}>Exit</Text>
-      </TouchableOpacity>
-
-      {/* Feedback Overlay */}
       {showFeedback && (
         <View style={styles.feedbackOverlay}>
           <View style={styles.feedbackContent}>
@@ -376,27 +425,22 @@ export default function SpeechPracticeScreen({ navigation }: any) {
         </View>
       )}
 
-      {/* Summary Modal */}
       <Modal visible={showingSummary} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <GlassCard style={styles.summaryCard}>
-            <Text style={styles.summaryIcon}>🎤</Text>
             <Text style={styles.summaryTitle}>Speech Session Complete</Text>
-
             <View style={styles.summaryStats}>
-              <Text style={styles.summaryStatText}>Score: {score}</Text>
-              <Text style={styles.summaryStatText}>
-                Accuracy: {Math.round((correctAnswers / MAX_PROMPTS) * 100)}%
-              </Text>
-              <Text style={styles.summaryStatText}>
-                Correct answers: {correctAnswers}/{MAX_PROMPTS}
-              </Text>
+              <StatRow title="Score" value={`${summary?.score ?? score}`} />
+              <StatRow title="Accuracy" value={`${Math.round((correctAnswers / MAX_PROMPTS) * 100)}%`} />
+              <StatRow title="Correct" value={`${correctAnswers}/${MAX_PROMPTS}`} />
             </View>
 
+            <Text style={styles.improvementText}>{formatImprovementText(summary?.improvement ?? 0)}</Text>
+
             <View style={styles.summaryButtons}>
-              <GlassButton title="Practice Again" onPress={handleReplay} />
-              <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-                <Text style={styles.doneButtonText}>Done</Text>
+              <GlassButton title="Play Again" onPress={handleReplay} />
+              <TouchableOpacity style={styles.returnButton} onPress={handleDone}>
+                <Text style={styles.returnButtonText}>Return</Text>
               </TouchableOpacity>
             </View>
           </GlassCard>
@@ -415,309 +459,294 @@ function InstructionRow({ icon, text }: { icon: string; text: string }) {
   );
 }
 
+function StatRow({ title, value }: { title: string; value: string }) {
+  return (
+    <View style={styles.statRow}>
+      <Text style={styles.statLabel}>{title}</Text>
+      <Text style={styles.statValue}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   instructionsContainer: {
     flex: 1,
-    padding: 24,
-    justifyContent: 'center',
-    gap: 28,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  instructionsHeaderRow: {
+    alignItems: 'flex-start',
+  },
+  instructionsBackButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  instructionsBackText: {
+    color: 'rgba(255, 255, 255, 0.78)',
+    fontSize: 15,
+    fontFamily: AURA_FONTS.pixel,
   },
   instructionsContent: {
     alignItems: 'center',
-    gap: 16,
+    gap: 8,
   },
   instructionIcon: {
-    fontSize: 80,
+    fontSize: 56,
   },
   instructionTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 24,
     color: 'white',
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
   },
   instructionSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.84)',
     textAlign: 'center',
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   howItWorks: {
-    gap: 16,
+    gap: 8,
   },
   howItWorksTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.92)',
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
   },
   instructionRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    alignItems: 'flex-start',
+    gap: 8,
   },
   instructionRowIcon: {
-    fontSize: 24,
+    fontSize: 18,
   },
   instructionRowText: {
-    fontSize: 16,
+    flex: 1,
     color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
+    fontSize: 13,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+    lineHeight: 18,
   },
-  startButton: {
-    marginTop: 8,
-  },
-  backButton: {
-    alignSelf: 'center',
-    padding: 12,
-  },
-  backButtonText: {
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 16,
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 100,
-  },
-  content: {
-    paddingHorizontal: 24,
-    gap: 24,
-  },
-  header: {
+  toggleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
-  headerLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  toggleText: {
     color: 'white',
+    fontSize: 13,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
   },
-  headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
-    marginTop: 4,
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+  startButton: {
+    marginTop: 2,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerCard: {
+    flex: 1,
+  },
+  headerInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   headerRight: {
     alignItems: 'flex-end',
   },
-  progressSection: {
-    gap: 12,
-  },
-  progressLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.85)',
+  headerLabel: {
+    color: 'white',
+    fontSize: 15,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
+  },
+  headerSubtext: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    marginTop: 3,
+    fontSize: 11,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  doneButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  progressCard: {
+    gap: 6,
   },
   progressBar: {
     height: 8,
+    borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     backgroundColor: AURA_COLORS.accent,
   },
-  progressText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+  practiceArea: {
+    flex: 1,
+    gap: 10,
+  },
+  questionCard: {
+    flex: 0.42,
   },
   questionImage: {
     width: '100%',
-    height: 280,
+    height: '100%',
   },
   placeholderImage: {
-    height: 280,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderEmoji: {
-    fontSize: 120,
+    fontSize: 88,
   },
-  listeningContainer: {
-    alignItems: 'center',
-    gap: 12,
+  voiceCard: {
+    flex: 0.58,
+    gap: 10,
+    justifyContent: 'space-between',
   },
-  micIcon: {
-    fontSize: 46,
+  voiceStatusBlock: {
+    gap: 6,
   },
-  listeningText: {
-    fontSize: 18,
-    fontWeight: '600',
+  voiceLabel: {
     color: 'rgba(255, 255, 255, 0.9)',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  stopButton: {
-    marginTop: 8,
-  },
-  micButton: {
-    marginVertical: 8,
-  },
-  transcriptionBox: {
-    marginTop: 16,
-    padding: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
-  },
-  transcriptionLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
-    marginBottom: 8,
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  transcriptionText: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: '500',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  fallbackContainer: {
-    gap: 16,
-  },
-  fallbackLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 13,
     textAlign: 'center',
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+  },
+  transcriptText: {
+    color: 'white',
+    fontSize: 14,
+    textAlign: 'center',
+    minHeight: 18,
+    fontFamily: AURA_FONTS.pixel,
   },
   emotionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 14,
+    gap: 8,
     justifyContent: 'center',
-    alignItems: 'center',
-    alignContent: 'center',
   },
   emotionButton: {
     width: '30%',
-    aspectRatio: 1,
+    aspectRatio: 1.12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   emotionEmoji: {
-    fontSize: 32,
+    fontSize: 26,
   },
   emotionName: {
-    fontSize: 11,
     color: 'white',
-    fontWeight: '600',
-    marginTop: 4,
+    marginTop: 3,
+    fontSize: 10,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.2,
-  },
-  exitButton: {
-    position: 'absolute',
-    top: 60,
-    right: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  exitButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
   },
   feedbackOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   feedbackContent: {
     alignItems: 'center',
-    padding: 40,
+    paddingHorizontal: 20,
   },
   feedbackIcon: {
-    fontSize: 80,
+    fontSize: 64,
     color: 'white',
-    marginBottom: 16,
   },
   feedbackTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    marginTop: 8,
     color: 'white',
+    fontSize: 22,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: 'rgba(0, 0, 0, 0.88)',
     justifyContent: 'center',
     padding: 20,
   },
   summaryCard: {
-    alignItems: 'center',
-    padding: 24,
-  },
-  summaryIcon: {
-    fontSize: 56,
-    marginBottom: 8,
+    padding: 20,
   },
   summaryTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
     color: 'white',
-    marginBottom: 24,
+    fontSize: 23,
+    textAlign: 'center',
+    marginBottom: 14,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.5,
   },
   summaryStats: {
     gap: 8,
-    marginBottom: 24,
-    alignItems: 'center',
   },
-  summaryStatText: {
-    fontSize: 16,
-    color: 'white',
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statLabel: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+  },
+  statValue: {
+    color: 'white',
+    fontSize: 15,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  improvementText: {
+    marginTop: 12,
+    marginBottom: 14,
+    textAlign: 'center',
+    color: AURA_COLORS.accent,
+    fontSize: 13,
+    fontFamily: AURA_FONTS.pixel,
   },
   summaryButtons: {
-    width: '100%',
-    gap: 12,
+    gap: 10,
   },
-  doneButton: {
-    padding: 16,
+  returnButton: {
+    borderRadius: 14,
+    backgroundColor: 'rgba(91, 124, 255, 0.2)',
     alignItems: 'center',
-    backgroundColor: 'rgba(91, 124, 255, 0.18)',
-    borderRadius: 16,
+    paddingVertical: 12,
   },
-  doneButtonText: {
-    color: 'rgba(255, 255, 255, 0.9)',
+  returnButtonText: {
+    color: 'rgba(255, 255, 255, 0.95)',
     fontSize: 16,
-    fontWeight: '600',
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
   },
 });

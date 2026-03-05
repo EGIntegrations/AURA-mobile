@@ -1,34 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Image,
   Modal,
-  Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { CurriculumEngine } from '../services/CurriculumEngine';
 import { ProgressionService } from '../services/ProgressionService';
 import { AudioService } from '../services/AudioService';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
-import { ALL_EMOTIONS, GameQuestion } from '../types';
+import { ALL_EMOTIONS, GameQuestion, ScoreSummary } from '../types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import { buildScoreSummary, formatImprovementText } from '../utils/sessionSummary';
 
 const MAX_QUESTIONS = 8;
-const QUESTION_TIME_LIMIT = 25.0;
+const QUESTION_TIME_LIMIT = 20;
+
+type RoundStatus = 'active' | 'transitioning' | 'complete';
 
 export default function GameScreen({ navigation }: any) {
   const { currentUser, updateUserProgress } = useAuthStore();
+  const insets = useSafeAreaInsets();
+
   const [currentQuestion, setCurrentQuestion] = useState<GameQuestion | null>(null);
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
   const [selectedEmotion, setSelectedEmotion] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(QUESTION_TIME_LIMIT);
   const [score, setScore] = useState(0);
@@ -36,15 +39,27 @@ export default function GameScreen({ navigation }: any) {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [maxStreak, setMaxStreak] = useState(0);
+  const [roundStatus, setRoundStatus] = useState<RoundStatus>('active');
   const [showSummary, setShowSummary] = useState(false);
+  const [summary, setSummary] = useState<ScoreSummary | null>(null);
 
   const curriculumEngine = useRef(new CurriculumEngine());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const transitionRef = useRef<NodeJS.Timeout | null>(null);
+  const previousScoreRef = useRef<number | null>(null);
+  const scoreRef = useRef(0);
+  const correctAnswersRef = useRef(0);
+  const questionsAnsweredRef = useRef(0);
+  const currentStreakRef = useRef(0);
+  const maxStreakRef = useRef(0);
 
   useEffect(() => {
+    previousScoreRef.current = currentUser?.progress.sessionHistory[0]?.score ?? null;
     startGame();
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (transitionRef.current) clearTimeout(transitionRef.current);
       AudioService.stopSpeaking();
     };
   }, []);
@@ -52,30 +67,29 @@ export default function GameScreen({ navigation }: any) {
   const startGame = () => {
     if (!currentUser) return;
 
-    // Generate question queue
-    const questions = curriculumEngine.current.generateQuestionQueue(
-      currentUser.progress,
-      MAX_QUESTIONS
-    );
+    curriculumEngine.current.generateQuestionQueue(currentUser.progress, MAX_QUESTIONS);
 
-    // Reset state
     setScore(0);
     setQuestionsAnswered(0);
     setCorrectAnswers(0);
     setCurrentStreak(0);
     setMaxStreak(0);
+    setSelectedEmotion(null);
     setShowSummary(false);
+    setSummary(null);
+    scoreRef.current = 0;
+    correctAnswersRef.current = 0;
+    questionsAnsweredRef.current = 0;
+    currentStreakRef.current = 0;
+    maxStreakRef.current = 0;
 
-    // Load first question
     loadNextQuestion();
-    startTimer();
   };
 
   const loadNextQuestion = () => {
     const question = curriculumEngine.current.nextQuestion();
 
     if (!question) {
-      // No more questions - end game
       endGame();
       return;
     }
@@ -83,17 +97,19 @@ export default function GameScreen({ navigation }: any) {
     setCurrentQuestion(question);
     setQuestionStartTime(Date.now());
     setSelectedEmotion(null);
-    setShowFeedback(false);
+    setRoundStatus('active');
     setTimeRemaining(QUESTION_TIME_LIMIT);
+    startTimer();
   };
 
   const startTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     timerRef.current = setInterval(() => {
-      setTimeRemaining(prev => {
+      setTimeRemaining((prev) => {
         if (prev <= 0.1) {
-          handleTimeUp();
+          if (timerRef.current) clearInterval(timerRef.current);
+          handleEmotionSelection('');
           return 0;
         }
         return prev - 0.1;
@@ -101,91 +117,82 @@ export default function GameScreen({ navigation }: any) {
     }, 100);
   };
 
-  const handleTimeUp = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (!selectedEmotion) {
-      handleEmotionSelection('');
-    }
-  };
-
   const handleEmotionSelection = (emotion: string) => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || roundStatus !== 'active') return;
 
     if (timerRef.current) clearInterval(timerRef.current);
-    setSelectedEmotion(emotion);
 
     const responseTime = (Date.now() - questionStartTime) / 1000;
     const isCorrect = emotion.toLowerCase() === currentQuestion.correctEmotion.toLowerCase();
 
+    setSelectedEmotion(emotion);
     setLastAnswerCorrect(isCorrect);
+    setRoundStatus('transitioning');
 
-    // Calculate score
     let points = 0;
+    let nextStreak = 0;
+    let nextCorrect = correctAnswersRef.current;
+
     if (isCorrect) {
       points = 100;
+      if (responseTime < 2) points += 50;
+      else if (responseTime < 5) points += 25;
+      points += currentStreakRef.current > 0 ? currentStreakRef.current * 10 : 0;
 
-      // Speed bonus
-      if (responseTime < 2) {
-        points += 50;
-      } else if (responseTime < 5) {
-        points += 25;
-      }
-
-      // Streak bonus
-      if (currentStreak > 0) {
-        points += currentStreak * 10;
-      }
-
-      const newStreak = currentStreak + 1;
-      setCurrentStreak(newStreak);
-      if (newStreak > maxStreak) {
-        setMaxStreak(newStreak);
-      }
-      setCorrectAnswers(prev => prev + 1);
+      nextStreak = currentStreakRef.current + 1;
+      nextCorrect += 1;
+      AudioService.playFeedback(true, currentQuestion.correctEmotion).catch(() => undefined);
     } else {
-      setCurrentStreak(0);
+      nextStreak = 0;
+      AudioService.playFeedback(false, currentQuestion.correctEmotion).catch(() => undefined);
     }
 
-    setScore(prev => prev + points);
-    setQuestionsAnswered(prev => prev + 1);
+    const nextScore = scoreRef.current + points;
+    const nextAnswered = questionsAnsweredRef.current + 1;
+    const nextMaxStreak = Math.max(maxStreakRef.current, nextStreak);
 
-    // Record answer
+    scoreRef.current = nextScore;
+    questionsAnsweredRef.current = nextAnswered;
+    correctAnswersRef.current = nextCorrect;
+    currentStreakRef.current = nextStreak;
+    maxStreakRef.current = nextMaxStreak;
+
+    setScore(nextScore);
+    setQuestionsAnswered(nextAnswered);
+    setCorrectAnswers(nextCorrect);
+    setCurrentStreak(nextStreak);
+    setMaxStreak(nextMaxStreak);
     curriculumEngine.current.recordAnswer(isCorrect, responseTime);
 
-    // Play feedback
-    AudioService.playFeedback(isCorrect, currentQuestion.correctEmotion);
-
-    // Show feedback overlay
-    setShowFeedback(true);
-
-    // Auto-advance after delay
-    setTimeout(() => {
-      if (questionsAnswered + 1 >= MAX_QUESTIONS) {
+    transitionRef.current = setTimeout(() => {
+      if (questionsAnsweredRef.current >= MAX_QUESTIONS) {
         endGame();
       } else {
-        setShowFeedback(false);
         loadNextQuestion();
-        startTimer();
       }
-    }, 1600);
+    }, 1200);
   };
 
   const endGame = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    if (transitionRef.current) clearTimeout(transitionRef.current);
 
-    // Create session
-    const session = curriculumEngine.current.completeSession(score, maxStreak);
+    const finalScore = scoreRef.current;
+    const finalCorrect = correctAnswersRef.current;
+    const finalAnswered = questionsAnsweredRef.current;
+    const finalCurrentStreak = currentStreakRef.current;
+    const finalMaxStreak = maxStreakRef.current;
+    const session = curriculumEngine.current.completeSession(finalScore, finalMaxStreak);
 
-    // Update user progress
     if (currentUser) {
       const updatedProgress = {
         ...currentUser.progress,
         totalSessions: currentUser.progress.totalSessions + 1,
-        totalScore: currentUser.progress.totalScore + score,
-        totalCorrectAnswers: currentUser.progress.totalCorrectAnswers + correctAnswers,
-        totalQuestions: currentUser.progress.totalQuestions + questionsAnswered,
-        currentStreak,
-        bestStreak: Math.max(currentUser.progress.bestStreak, maxStreak),
+        totalScore: currentUser.progress.totalScore + finalScore,
+        totalCorrectAnswers: currentUser.progress.totalCorrectAnswers + finalCorrect,
+        totalQuestions: currentUser.progress.totalQuestions + finalAnswered,
+        currentStreak: finalCurrentStreak,
+        bestStreak: Math.max(currentUser.progress.bestStreak, finalMaxStreak),
         sessionHistory: [session, ...currentUser.progress.sessionHistory].slice(0, 20),
         lastSessionDate: new Date(),
       };
@@ -193,22 +200,24 @@ export default function GameScreen({ navigation }: any) {
       await updateUserProgress(progressed);
     }
 
+    await AudioService.playSessionComplete();
+    setSummary(buildScoreSummary(finalScore, previousScoreRef.current));
     setCurrentQuestion(null);
+    setRoundStatus('complete');
     setShowSummary(true);
   };
 
   const handlePlayAgain = () => {
-    setShowSummary(false);
     curriculumEngine.current.reset();
     startGame();
   };
 
-  const handleExit = () => {
+  const handleReturn = () => {
     navigation.goBack();
   };
 
   const progress = questionsAnswered / MAX_QUESTIONS;
-  const timeProgress = timeRemaining / QUESTION_TIME_LIMIT;
+  const timeProgress = Math.max(0, timeRemaining / QUESTION_TIME_LIMIT);
 
   const timeBarColor =
     timeProgress > 0.5
@@ -221,145 +230,113 @@ export default function GameScreen({ navigation }: any) {
     <View style={styles.container}>
       <AuraBackground />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.content}>
-          {/* Header */}
-          <GlassCard>
-            <View style={styles.header}>
+      <View style={[styles.screenContent, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}> 
+        <View style={styles.headerRow}>
+          <GlassCard cornerRadius={20} padding={14} style={styles.headerCard}>
+            <View style={styles.headerInner}>
               <View>
-                <Text style={styles.headerLabel}>
-                  Level {currentUser?.progress.currentLevel || 1}
-                </Text>
-                <Text style={styles.headerSubtitle}>Score {score}</Text>
+                <Text style={styles.headerLabel}>Level {currentUser?.progress.currentLevel || 1}</Text>
+                <Text style={styles.headerSubtext}>Score {score}</Text>
               </View>
               <View style={styles.headerRight}>
                 <Text style={styles.headerLabel}>
-                  Question {Math.min(questionsAnswered + 1, MAX_QUESTIONS)}/{MAX_QUESTIONS}
+                  {Math.min(questionsAnswered + 1, MAX_QUESTIONS)}/{MAX_QUESTIONS}
                 </Text>
-                <Text style={styles.headerSubtitle}>Streak {currentStreak}</Text>
+                <Text style={styles.headerSubtext}>Streak {currentStreak}</Text>
               </View>
             </View>
           </GlassCard>
 
-          {/* Progress Bar */}
-          <GlassCard>
-            <View style={styles.progressSection}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-              </View>
-              <View style={styles.timeBar}>
-                <View
-                  style={[
-                    styles.timeFill,
-                    { width: `${timeProgress * 100}%`, backgroundColor: timeBarColor },
-                  ]}
-                />
-              </View>
-            </View>
-          </GlassCard>
-
-          {/* Question */}
-          {currentQuestion ? (
-            <View style={styles.questionContainer}>
-              <GlassCard cornerRadius={30}>
-                {currentQuestion.imageData ? (
-                  <Image
-                    source={{ uri: currentQuestion.imageData }}
-                    style={styles.questionImage}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View style={styles.placeholderImage}>
-                    <Text style={styles.placeholderEmoji}>
-                      {ALL_EMOTIONS.find(e => e.name === currentQuestion.correctEmotion)?.emoji || '😐'}
-                    </Text>
-                  </View>
-                )}
-              </GlassCard>
-
-              {/* Emotion Selection Grid */}
-              <GlassCard cornerRadius={24}>
-                <View style={styles.emotionGrid}>
-                  {ALL_EMOTIONS.map(emotion => (
-                    <TouchableOpacity
-                      key={emotion.id}
-                      style={[
-                        styles.emotionButton,
-                        selectedEmotion?.toLowerCase() === emotion.name.toLowerCase() &&
-                          styles.emotionButtonSelected,
-                      ]}
-                      onPress={() => handleEmotionSelection(emotion.name)}
-                      disabled={showFeedback}
-                    >
-                      <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
-                      <Text style={styles.emotionName}>{emotion.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </GlassCard>
-            </View>
-          ) : (
-            <GlassCard cornerRadius={28}>
-              <View style={styles.loading}>
-                <Text style={styles.loadingText}>Preparing your next challenge…</Text>
-              </View>
-            </GlassCard>
-          )}
+          <TouchableOpacity style={styles.doneButton} onPress={handleReturn}>
+            <Text style={styles.doneButtonText}>✕ Done</Text>
+          </TouchableOpacity>
         </View>
-      </ScrollView>
 
-      {/* Exit Button */}
-      <View style={styles.exitContainer}>
-        <TouchableOpacity style={styles.exitButton} onPress={handleExit}>
-          <Text style={styles.exitButtonText}>Exit</Text>
-        </TouchableOpacity>
+        <GlassCard cornerRadius={20} padding={12} style={styles.progressCard}>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          </View>
+          <View style={styles.timeBar}>
+            <View style={[styles.timeFill, { width: `${timeProgress * 100}%`, backgroundColor: timeBarColor }]} />
+          </View>
+        </GlassCard>
+
+        <View style={styles.mainArea}>
+          <GlassCard cornerRadius={24} padding={14} style={styles.questionCard}>
+            {currentQuestion ? (
+              currentQuestion.imageData ? (
+                <Image source={{ uri: currentQuestion.imageData }} style={styles.questionImage} resizeMode="contain" />
+              ) : (
+                <View style={styles.placeholderImage}>
+                  <Text style={styles.placeholderEmoji}>
+                    {ALL_EMOTIONS.find((emotion) => emotion.name === currentQuestion.correctEmotion)?.emoji || '😐'}
+                  </Text>
+                </View>
+              )
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Text style={styles.loadingText}>Preparing challenge…</Text>
+              </View>
+            )}
+          </GlassCard>
+
+          <GlassCard cornerRadius={24} padding={14} style={styles.answerCard}>
+            <View style={styles.emotionGrid}>
+              {ALL_EMOTIONS.map((emotion) => (
+                <TouchableOpacity
+                  key={emotion.id}
+                  style={[
+                    styles.emotionButton,
+                    selectedEmotion?.toLowerCase() === emotion.name.toLowerCase() && styles.emotionButtonSelected,
+                  ]}
+                  onPress={() => handleEmotionSelection(emotion.name)}
+                  disabled={roundStatus !== 'active'}
+                >
+                  <Text style={styles.emotionEmoji}>{emotion.emoji}</Text>
+                  <Text style={styles.emotionName}>{emotion.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </GlassCard>
+        </View>
       </View>
 
-      {/* Feedback Overlay */}
-      {showFeedback && (
+      {roundStatus === 'transitioning' && (
         <View style={styles.feedbackOverlay}>
           <View style={styles.feedbackContent}>
             <Text style={styles.feedbackIcon}>{lastAnswerCorrect ? '✓' : '✗'}</Text>
             <Text style={styles.feedbackTitle}>{lastAnswerCorrect ? 'Correct!' : 'Not Quite'}</Text>
             {!lastAnswerCorrect && currentQuestion && (
-              <Text style={styles.feedbackSubtitle}>
-                The correct answer was: {currentQuestion.correctEmotion}
-              </Text>
+              <Text style={styles.feedbackSubtitle}>Correct answer: {currentQuestion.correctEmotion}</Text>
             )}
           </View>
         </View>
       )}
 
-      {/* Summary Modal */}
       <Modal visible={showSummary} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <GlassCard style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Session Complete!</Text>
-
+            <Text style={styles.summaryTitle}>Session Complete</Text>
             <View style={styles.summaryStats}>
-              <StatRow title="Final Score" value={score.toString()} />
+              <StatRow title="Score" value={`${summary?.score ?? score}`} />
               <StatRow
                 title="Accuracy"
-                value={`${Math.round((correctAnswers / questionsAnswered) * 100)}%`}
+                value={`${questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0}%`}
               />
-              <StatRow title="Questions" value={`${correctAnswers}/${questionsAnswered}`} />
-              <StatRow title="Best Streak" value={maxStreak.toString()} />
+              <StatRow title="Best Streak" value={`${maxStreak}`} />
             </View>
+            <Text style={styles.improvementText}>
+              {formatImprovementText(summary?.improvement ?? 0)}
+            </Text>
 
             <View style={styles.summaryButtons}>
               <TouchableOpacity style={styles.summaryButton} onPress={handlePlayAgain}>
-                <LinearGradient
-                  colors={AURA_COLORS.gradients.primary}
-                  style={styles.summaryButtonGradient}
-                >
+                <LinearGradient colors={AURA_COLORS.gradients.primary} style={styles.summaryButtonGradient}>
                   <Text style={styles.summaryButtonText}>Play Again</Text>
                 </LinearGradient>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.summaryButton} onPress={handleExit}>
-                <View style={styles.summaryButtonSecondary}>
-                  <Text style={styles.summaryButtonTextSecondary}>Done</Text>
-                </View>
+              <TouchableOpacity style={styles.summaryButtonSecondary} onPress={handleReturn}>
+                <Text style={styles.summaryButtonTextSecondary}>Return</Text>
               </TouchableOpacity>
             </View>
           </GlassCard>
@@ -369,15 +346,10 @@ export default function GameScreen({ navigation }: any) {
   );
 }
 
-interface StatRowProps {
-  title: string;
-  value: string;
-}
-
-function StatRow({ title, value }: StatRowProps) {
+function StatRow({ title, value }: { title: string; value: string }) {
   return (
     <View style={styles.statRow}>
-      <Text style={styles.statTitle}>{title}</Text>
+      <Text style={styles.statLabel}>{title}</Text>
       <Text style={styles.statValue}>{value}</Text>
     </View>
   );
@@ -387,42 +359,59 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 100,
+  screenContent: {
+    flex: 1,
+    paddingHorizontal: 14,
+    gap: 10,
   },
-  content: {
-    paddingHorizontal: 24,
-    gap: 24,
+  headerRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
   },
-  header: {
+  headerCard: {
+    flex: 1,
+  },
+  headerInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  headerLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
-    marginTop: 4,
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+    alignItems: 'center',
   },
   headerRight: {
     alignItems: 'flex-end',
   },
-  progressSection: {
-    gap: 12,
+  headerLabel: {
+    color: 'white',
+    fontSize: 16,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
+  },
+  headerSubtext: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 11,
+    marginTop: 3,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
+  },
+  doneButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  doneButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
+  },
+  progressCard: {
+    gap: 8,
   },
   progressBar: {
     height: 8,
+    borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 4,
     overflow: 'hidden',
   },
   progressFill: {
@@ -431,186 +420,166 @@ const styles = StyleSheet.create({
   },
   timeBar: {
     height: 8,
+    borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 4,
     overflow: 'hidden',
   },
   timeFill: {
     height: '100%',
   },
-  questionContainer: {
-    gap: 24,
+  mainArea: {
+    flex: 1,
+    gap: 10,
+  },
+  questionCard: {
+    flex: 0.45,
+    justifyContent: 'center',
   },
   questionImage: {
     width: '100%',
-    height: 260,
+    height: '100%',
   },
   placeholderImage: {
-    height: 260,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderEmoji: {
-    fontSize: 120,
+    fontSize: 96,
+  },
+  loadingText: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 15,
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
+  },
+  answerCard: {
+    flex: 0.55,
+    justifyContent: 'center',
   },
   emotionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: 8,
     justifyContent: 'center',
-    alignContent: 'center',
     alignItems: 'center',
   },
   emotionButton: {
     width: '30%',
-    aspectRatio: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
+    aspectRatio: 1.12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.22)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
   },
   emotionButtonSelected: {
-    backgroundColor: AURA_COLORS.accentSoft,
     borderColor: AURA_COLORS.accent,
+    backgroundColor: AURA_COLORS.accentSoft,
   },
   emotionEmoji: {
-    fontSize: 36,
-    marginBottom: 4,
+    fontSize: 28,
   },
   emotionName: {
-    fontSize: 12,
+    marginTop: 3,
     color: 'white',
-    fontWeight: '600',
+    fontSize: 10,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.2,
-  },
-  loading: {
-    paddingVertical: 34,
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  exitContainer: {
-    position: 'absolute',
-    top: 60,
-    right: 24,
-  },
-  exitButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  exitButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+    letterSpacing: 0.1,
   },
   feedbackOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.72)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   feedbackContent: {
     alignItems: 'center',
-    padding: 40,
+    paddingHorizontal: 24,
   },
   feedbackIcon: {
-    fontSize: 80,
+    fontSize: 70,
     color: 'white',
-    marginBottom: 16,
   },
   feedbackTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
     color: 'white',
-    marginBottom: 8,
+    fontSize: 30,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.5,
+    marginTop: 6,
   },
   feedbackSubtitle: {
-    fontSize: 18,
     color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    marginTop: 8,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: 'rgba(0, 0, 0, 0.88)',
     justifyContent: 'center',
     padding: 20,
   },
   summaryCard: {
-    padding: 24,
+    padding: 20,
   },
   summaryTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
     color: 'white',
+    fontSize: 24,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 14,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.5,
   },
   summaryStats: {
-    gap: 16,
-    marginBottom: 24,
+    gap: 10,
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
   },
-  statTitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.75)',
+  statLabel: {
+    color: 'rgba(255, 255, 255, 0.78)',
+    fontSize: 14,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
     color: 'white',
+    fontSize: 16,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
+  },
+  improvementText: {
+    marginTop: 14,
+    marginBottom: 16,
+    textAlign: 'center',
+    color: AURA_COLORS.accent,
+    fontSize: 13,
+    fontFamily: AURA_FONTS.pixel,
   },
   summaryButtons: {
-    gap: 12,
+    gap: 10,
   },
   summaryButton: {
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   summaryButtonGradient: {
-    paddingVertical: 16,
+    paddingVertical: 13,
     alignItems: 'center',
-  },
-  summaryButtonSecondary: {
-    paddingVertical: 16,
-    alignItems: 'center',
-    backgroundColor: AURA_COLORS.accentSoft,
   },
   summaryButtonText: {
     color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
+  },
+  summaryButtonSecondary: {
+    borderRadius: 14,
+    alignItems: 'center',
+    backgroundColor: 'rgba(91, 124, 255, 0.2)',
+    paddingVertical: 13,
   },
   summaryButtonTextSecondary: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 18,
-    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontSize: 16,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
   },
 });

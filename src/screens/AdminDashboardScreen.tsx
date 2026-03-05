@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { AuthenticationService } from '../services/AuthenticationService';
+import { BackendClient } from '../services/BackendClient';
 import { User, UserRole } from '../types';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
@@ -35,9 +36,8 @@ export default function AdminDashboardScreen({ navigation }: any) {
   if (!currentUser) return null;
 
   const hasPermission =
-    currentUser.role === UserRole.TEACHER ||
-    currentUser.role === UserRole.PARENT ||
-    currentUser.role === UserRole.ADMIN;
+    (__DEV__ || BackendClient.isConfigured()) &&
+    [UserRole.TEACHER, UserRole.PARENT, UserRole.ADMIN].includes(currentUser.role);
 
   if (!hasPermission) {
     return (
@@ -216,7 +216,7 @@ ${supervisedUsers.map((user) => `- ${user.displayName} (Level ${user.progress.cu
                   <Text style={styles.emptyText}>No learners added yet</Text>
                 </GlassCard>
               ) : (
-                supervisedUsers.map((user, index) => (
+                supervisedUsers.map((user) => (
                   <GlassCard key={user.id}>
                     <View style={styles.learnerCard}>
                       <View style={styles.learnerAvatar}>
@@ -445,9 +445,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   backButton: {
-    fontSize: 16,
-    color: 'white',
-    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   backButtonText: {
     color: 'white',

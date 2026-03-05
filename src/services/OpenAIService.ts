@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Buffer } from 'buffer';
 import { APIKeyService } from './APIKeyService';
 import { BackendClient } from './BackendClient';
+import { Logger } from './Logger';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -18,6 +19,8 @@ interface VisionMessage {
 }
 
 export class OpenAIService {
+  private static readonly REQUEST_TIMEOUT_MS = 15000;
+
   private static async getApiKey(): Promise<string> {
     const key = await APIKeyService.getOpenAIKey();
     if (!key) {
@@ -27,71 +30,83 @@ export class OpenAIService {
   }
 
   static async chat(messages: ChatMessage[], maxTokens: number = 500): Promise<string> {
-    if (BackendClient.isConfigured()) {
-      const response = await BackendClient.post<{ message: string }>('/ai/chat', {
-        messages,
-        maxTokens,
-      });
-      return response.message;
-    }
-
-    const apiKey = await this.getApiKey();
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4o-mini',
-        messages,
-        temperature: 0.7,
-        max_tokens: maxTokens,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+    try {
+      if (BackendClient.isConfigured()) {
+        const response = await BackendClient.post<{ message: string }>('/ai/chat', {
+          messages,
+          maxTokens,
+        });
+        return response.message;
       }
-    );
 
-    return response.data.choices[0].message.content;
+      const apiKey = await this.getApiKey();
+
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4o-mini',
+          messages,
+          temperature: 0.7,
+          max_tokens: maxTokens,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: this.REQUEST_TIMEOUT_MS,
+        }
+      );
+
+      return response.data.choices[0].message.content;
+    } catch (error) {
+      Logger.warn('OpenAI chat failed', Logger.fromError(error));
+      throw new Error('AI conversation is currently unavailable');
+    }
   }
 
   static async analyzeImage(imageBase64: string, prompt: string): Promise<string> {
-    if (BackendClient.isConfigured()) {
-      const response = await BackendClient.post<{ message: string }>('/ai/vision', {
-        imageBase64,
-        prompt,
-      });
-      return response.message;
-    }
-
-    const apiKey = await this.getApiKey();
-
-    const messages: VisionMessage[] = [{
-      role: 'user',
-      content: [
-        { type: 'text', text: prompt },
-        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
-      ],
-    }];
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4o-mini',
-        messages,
-        max_tokens: 300,
-        temperature: 0.2,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
+    try {
+      if (BackendClient.isConfigured()) {
+        const response = await BackendClient.post<{ message: string }>('/ai/vision', {
+          imageBase64,
+          prompt,
+        });
+        return response.message;
       }
-    );
 
-    return response.data.choices[0].message.content;
+      const apiKey = await this.getApiKey();
+
+      const messages: VisionMessage[] = [{
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt },
+          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
+        ],
+      }];
+
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: 'gpt-4o-mini',
+          messages,
+          max_tokens: 300,
+          temperature: 0.2,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: this.REQUEST_TIMEOUT_MS,
+        }
+      );
+
+      return response.data.choices[0].message.content;
+    } catch (error) {
+      Logger.warn('OpenAI vision failed', Logger.fromError(error));
+      throw new Error('Vision analysis is currently unavailable');
+    }
   }
 
   static async textToSpeech(text: string): Promise<string> {
@@ -119,6 +134,7 @@ export class OpenAIService {
           'Content-Type': 'application/json',
         },
         responseType: 'arraybuffer',
+        timeout: this.REQUEST_TIMEOUT_MS,
       }
     );
 
@@ -152,6 +168,7 @@ export class OpenAIService {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
+        timeout: this.REQUEST_TIMEOUT_MS,
       }
     );
 
@@ -196,6 +213,7 @@ export class OpenAIService {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'multipart/form-data',
         },
+        timeout: this.REQUEST_TIMEOUT_MS,
       }
     );
 

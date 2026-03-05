@@ -1,3 +1,5 @@
+export type GradientColors = readonly [string, string, ...string[]];
+
 export const AURA_COLORS = {
   primary: '#5B7CFF',
   primaryDark: '#3F5FD6',
@@ -15,10 +17,10 @@ export const AURA_COLORS = {
     overlay: 'rgba(255, 255, 255, 0.04)',
   },
   gradients: {
-    primary: ['#5B7CFF', '#7ED0FF'],
-    secondary: ['#A37BFF', '#5B7CFF'],
-    subtleGlass: ['rgba(91, 124, 255, 0.24)', 'rgba(163, 123, 255, 0.12)'],
-    accent: ['#7ED0FF', '#A37BFF'],
-    danger: ['#F87171', '#EF4444'],
+    primary: ['#5B7CFF', '#7ED0FF'] as GradientColors,
+    secondary: ['#A37BFF', '#5B7CFF'] as GradientColors,
+    subtleGlass: ['rgba(91, 124, 255, 0.24)', 'rgba(163, 123, 255, 0.12)'] as GradientColors,
+    accent: ['#7ED0FF', '#A37BFF'] as GradientColors,
+    danger: ['#F87171', '#EF4444'] as GradientColors,
   },
 };

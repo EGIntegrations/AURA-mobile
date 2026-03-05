@@ -42,9 +42,12 @@ export default function APIKeyConfigScreen({ navigation }: any) {
     return key.substring(0, 4) + '•'.repeat(key.length - 8) + key.substring(key.length - 4);
   };
 
+  const isLikelyOpenAIKey = (key: string): boolean => /^sk-[A-Za-z0-9._-]{20,}$/.test(key.trim());
+  const isLikelyElevenLabsKey = (key: string): boolean => /^[A-Za-z0-9_-]{20,}$/.test(key.trim());
+
   const handleSaveOpenAI = async () => {
-    if (!openAIKey || openAIKey.includes('•')) {
-      Alert.alert('Error', 'Please enter a valid API key');
+    if (!openAIKey || openAIKey.includes('•') || !isLikelyOpenAIKey(openAIKey)) {
+      Alert.alert('Error', 'Please enter a valid OpenAI API key');
       return;
     }
 
@@ -61,8 +64,8 @@ export default function APIKeyConfigScreen({ navigation }: any) {
   };
 
   const handleSaveElevenLabs = async () => {
-    if (!elevenLabsKey || elevenLabsKey.includes('•')) {
-      Alert.alert('Error', 'Please enter a valid API key');
+    if (!elevenLabsKey || elevenLabsKey.includes('•') || !isLikelyElevenLabsKey(elevenLabsKey)) {
+      Alert.alert('Error', 'Please enter a valid ElevenLabs API key');
       return;
     }
 

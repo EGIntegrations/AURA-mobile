@@ -14,10 +14,10 @@ import ProgressScreen from '../screens/ProgressScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import APIKeyConfigScreen from '../screens/APIKeyConfigScreen';
 import VoiceCommandScreen from '../screens/VoiceCommandScreen';
-import VisionTrainingScreen from '../screens/VisionTrainingScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import { Logger } from '../services/Logger';
 
 const Stack = createNativeStackNavigator();
 
@@ -31,7 +31,7 @@ export default function RootNavigator() {
       try {
         await initialize();
       } catch (err) {
-        console.error('Initialization error:', err);
+        Logger.error('Initialization error', err instanceof Error ? err.message : 'Unknown error');
         setError(err instanceof Error ? err.message : 'Unknown initialization error');
       } finally {
         setLoading(false);
@@ -105,11 +105,6 @@ export default function RootNavigator() {
             name="VoiceCommands"
             component={VoiceCommandScreen}
             options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="VisionTraining"
-            component={VisionTrainingScreen}
-            options={{ presentation: 'fullScreenModal' }}
           />
           <Stack.Screen
             name="Settings"

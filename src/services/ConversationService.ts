@@ -1,6 +1,9 @@
 import { OpenAIService } from './OpenAIService';
 import { ElevenLabsService } from './ElevenLabsService';
 import { AudioService } from './AudioService';
+import { APIKeyService } from './APIKeyService';
+import { BackendClient } from './BackendClient';
+import { Logger } from './Logger';
 
 export interface ConversationMessage {
   id: string;
@@ -8,6 +11,7 @@ export interface ConversationMessage {
   sender: 'user' | 'assistant';
   timestamp: Date;
   emotionalTone?: 'supportive' | 'encouraging' | 'corrective' | 'neutral';
+  source?: 'ai' | 'fallback';
 }
 
 export interface ConversationScenario {
@@ -84,13 +88,16 @@ export class ConversationService {
   private currentScenario: ConversationScenario | null = null;
   private startTime: Date | null = null;
   private isListening: boolean = false;
+  private aiAvailable: boolean = true;
+  private lastAssistantSource: 'ai' | 'fallback' = 'ai';
 
   async startConversation(scenario: ConversationScenario): Promise<ConversationMessage> {
     this.currentScenario = scenario;
     this.messages = [];
     this.startTime = new Date();
+    this.aiAvailable = await this.checkAIAvailability();
+    this.lastAssistantSource = this.aiAvailable ? 'ai' : 'fallback';
 
-    // Generate opening message
     const openingText = await this.generateOpeningMessage(scenario);
 
     const openingMessage: ConversationMessage = {
@@ -99,16 +106,15 @@ export class ConversationService {
       sender: 'assistant',
       timestamp: new Date(),
       emotionalTone: 'supportive',
+      source: this.lastAssistantSource,
     };
 
     this.messages.push(openingMessage);
 
-    // Play opening message via audio
     try {
       const audioUri = await ElevenLabsService.synthesizeSpeech(openingText, 'supportive');
       await AudioService.playSound(audioUri);
     } catch (error) {
-      // Fallback to system TTS
       await AudioService.speak(openingText);
     }
 
@@ -116,7 +122,6 @@ export class ConversationService {
   }
 
   async processUserMessage(userInput: string): Promise<ConversationMessage> {
-    // Add user message
     const userMessage: ConversationMessage = {
       id: this.generateMessageId(),
       content: userInput,
@@ -125,36 +130,52 @@ export class ConversationService {
     };
     this.messages.push(userMessage);
 
-    // Generate AI response
     const conversationHistory = this.messages.map(msg => ({
       role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
       content: msg.content,
     }));
 
     const systemPrompt = this.buildSystemPrompt();
-    const aiResponseText = await OpenAIService.chat(
-      [{ role: 'system', content: systemPrompt }, ...conversationHistory],
-      150
-    );
+    let responseSource: 'ai' | 'fallback' = 'fallback';
+    let responseText = '';
 
-    // Determine emotional tone
-    const tone = this.determineEmotionalTone(aiResponseText);
+    if (this.aiAvailable) {
+      try {
+        responseText = await OpenAIService.chat(
+          [{ role: 'system', content: systemPrompt }, ...conversationHistory],
+          150
+        );
+        responseSource = 'ai';
+      } catch (error) {
+        Logger.warn('AI chat unavailable; switching to fallback', Logger.fromError(error));
+        this.aiAvailable = false;
+      }
+    }
+
+    if (!responseText) {
+      responseText = this.buildFallbackResponse(userInput);
+      responseSource = 'fallback';
+    }
+
+    this.lastAssistantSource = responseSource;
+
+    const tone = this.determineEmotionalTone(responseText);
 
     const assistantMessage: ConversationMessage = {
       id: this.generateMessageId(),
-      content: aiResponseText,
+      content: responseText,
       sender: 'assistant',
       timestamp: new Date(),
       emotionalTone: tone,
+      source: responseSource,
     };
     this.messages.push(assistantMessage);
 
-    // Play response
     try {
-      const audioUri = await ElevenLabsService.synthesizeSpeech(aiResponseText, tone);
+      const audioUri = await ElevenLabsService.synthesizeSpeech(responseText, tone);
       await AudioService.playSound(audioUri);
     } catch (error) {
-      await AudioService.speak(aiResponseText);
+      await AudioService.speak(responseText);
     }
 
     return assistantMessage;
@@ -187,6 +208,14 @@ export class ConversationService {
 
   getCurrentScenario(): ConversationScenario | null {
     return this.currentScenario;
+  }
+
+  isOfflineModeActive(): boolean {
+    return !this.aiAvailable;
+  }
+
+  getLastAssistantSource(): 'ai' | 'fallback' {
+    return this.lastAssistantSource;
   }
 
   private buildSystemPrompt(): string {
@@ -255,6 +284,43 @@ Remember: You're helping someone practice social interactions in a safe, judgmen
     return 'neutral';
   }
 
+  private async checkAIAvailability(): Promise<boolean> {
+    if (BackendClient.isConfigured()) return true;
+    return await APIKeyService.hasOpenAIKey();
+  }
+
+  private buildFallbackResponse(userInput: string): string {
+    const text = userInput.trim();
+    const lower = text.toLowerCase();
+    const scenario = this.currentScenario?.topic || 'social_greeting';
+
+    if (scenario === 'social_greeting') {
+      if (lower.includes('hello') || lower.includes('hi')) {
+        return 'Nice greeting. Try adding a friendly follow-up like asking how their day is going.';
+      }
+      return 'A strong start is: "Hi, nice to meet you." Want to try that in your own words?';
+    }
+
+    if (scenario === 'asking_help') {
+      if (lower.includes('help') || lower.includes('please')) {
+        return 'That was clear and polite. You can make it even stronger by naming what you need help with.';
+      }
+      return 'Try this pattern: "Could you help me with ___, please?" Give it another try.';
+    }
+
+    if (scenario === 'expressing_feelings') {
+      if (lower.includes('feel')) {
+        return 'Good emotional language. Next step: share one reason you feel that way.';
+      }
+      return 'Try starting with "I feel..." and then add a short reason.';
+    }
+
+    if (lower.length < 12) {
+      return 'Good start. Add one more sentence with a specific detail to keep the conversation going.';
+    }
+    return 'That response works well. Ask a follow-up question to keep the conversation balanced.';
+  }
+
   private async generateConversationSummary(): Promise<{
     highlights: string;
     recommendations: string;
@@ -277,6 +343,9 @@ Format your response as JSON:
 }`;
 
     try {
+      if (!this.aiAvailable) {
+        throw new Error('AI unavailable');
+      }
       const response = await OpenAIService.chat([
         { role: 'system', content: 'You are analyzing a social skills practice conversation.' },
         { role: 'user', content: summaryPrompt },

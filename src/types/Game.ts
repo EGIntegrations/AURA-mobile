@@ -61,6 +61,16 @@ export interface ConversationSummary {
   sentiment?: string;
 }
 
+export interface ScoreSummary {
+  score: number;
+  previousScore: number | null;
+  improvement: number;
+}
+
+export interface ConversationMessageMeta {
+  source: 'ai' | 'fallback';
+}
+
 export interface Emotion {
   id: string;
   name: string;

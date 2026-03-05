@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AURA_COLORS } from '../theme/colors';
+import { AURA_COLORS, type GradientColors } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 
 interface Props {
@@ -21,12 +21,12 @@ export default function GlassButton({
   customStyle,
   textStyle,
 }: Props) {
-  const getColors = () => {
+  const getColors = (): GradientColors => {
     switch (style) {
       case 'primary':
         return AURA_COLORS.gradients.primary;
       case 'secondary':
-        return ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)'];
+        return ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.1)'] as GradientColors;
       case 'danger':
         return AURA_COLORS.gradients.danger;
       default:

@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, "codex/**"]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Basic secret scan
+        run: |
+          if grep -R -nE "sk-[A-Za-z0-9._-]{20,}" . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo "Potential API keys detected in repository."
+            exit 1
+          fi

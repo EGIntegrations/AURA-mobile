@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,22 +6,27 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Modal,
 } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 import { UserRole } from '../types';
+import { BackendClient } from '../services/BackendClient';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AURA_COLORS } from '../theme/colors';
+import { AURA_COLORS, type GradientColors } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 
 export default function DashboardScreen({ navigation }: any) {
   const { currentUser, signOut } = useAuthStore();
+  const [showEmotionPracticeMenu, setShowEmotionPracticeMenu] = useState(false);
 
   if (!currentUser) return null;
 
   const { progress } = currentUser;
-  const canViewAdmin = [UserRole.ADMIN, UserRole.PARENT, UserRole.TEACHER].includes(currentUser.role);
+  const canViewAdmin =
+    (__DEV__ || BackendClient.isConfigured()) &&
+    [UserRole.ADMIN, UserRole.PARENT, UserRole.TEACHER].includes(currentUser.role);
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -32,6 +37,19 @@ export default function DashboardScreen({ navigation }: any) {
 
   const navigateTo = (screen: string) => {
     navigation.navigate(screen);
+  };
+
+  const openEmotionPracticeMenu = () => {
+    setShowEmotionPracticeMenu(true);
+  };
+
+  const selectEmotionPracticeMode = (mode: 'recognition' | 'speech') => {
+    setShowEmotionPracticeMenu(false);
+    if (mode === 'recognition') {
+      navigateTo('Game');
+    } else {
+      navigateTo('SpeechPractice');
+    }
   };
 
   return (
@@ -77,45 +95,31 @@ export default function DashboardScreen({ navigation }: any) {
           {/* Feature Tiles */}
           <View style={styles.tilesContainer}>
             <FeatureTile
-              title="Emotion Recognition"
-              subtitle="Practice identifying expressions"
-              icon="😊"
+              title="Emotion Practice"
+              subtitle="Recognition & speech training"
+              icon="🎯"
               gradient={AURA_COLORS.gradients.primary}
-              onPress={() => navigateTo('Game')}
-            />
-            <FeatureTile
-              title="Speech Practice"
-              subtitle="Say the emotions you see"
-              icon="🎤"
-              gradient={AURA_COLORS.gradients.secondary}
-              onPress={() => navigateTo('SpeechPractice')}
+              onPress={openEmotionPracticeMenu}
             />
             <FeatureTile
               title="Facial Mimicry"
               subtitle="Practice making expressions"
               icon="📸"
-              gradient={['#2d3a7f', '#5b7cff']}
+              gradient={['#2d3a7f', '#5b7cff'] as GradientColors}
               onPress={() => navigateTo('Mimicry')}
-            />
-            <FeatureTile
-              title="Vision Training"
-              subtitle="Live emotion feedback"
-              icon="🧠"
-              gradient={['#3f5fd6', '#7ed0ff']}
-              onPress={() => navigateTo('VisionTraining')}
             />
             <FeatureTile
               title="AI Conversation"
               subtitle="Simulate real conversations"
               icon="💬"
-              gradient={['#3a2b7a', '#a37bff']}
+              gradient={['#3a2b7a', '#a37bff'] as GradientColors}
               onPress={() => navigateTo('Conversation')}
             />
             <FeatureTile
               title="My Progress"
               subtitle="Review mastery & insights"
               icon="📊"
-              gradient={['#5b7cff', '#a37bff']}
+              gradient={['#5b7cff', '#a37bff'] as GradientColors}
               onPress={() => navigateTo('Progress')}
             />
             {canViewAdmin && (
@@ -123,7 +127,7 @@ export default function DashboardScreen({ navigation }: any) {
                 title="Admin Dashboard"
                 subtitle="Manage learners & reports"
                 icon="🧭"
-                gradient={['#2a2f5a', '#5b7cff']}
+                gradient={['#2a2f5a', '#5b7cff'] as GradientColors}
                 onPress={() => navigateTo('AdminDashboard')}
               />
             )}
@@ -131,14 +135,14 @@ export default function DashboardScreen({ navigation }: any) {
               title="API Keys"
               subtitle="Configure AI services"
               icon="🔐"
-              gradient={['#23284d', '#7ed0ff']}
+              gradient={['#23284d', '#7ed0ff'] as GradientColors}
               onPress={() => navigateTo('APIKeyConfig')}
             />
             <FeatureTile
               title="Settings"
               subtitle="Preferences & access"
               icon="⚙️"
-              gradient={['#5b7cff', '#7ed0ff']}
+              gradient={['#5b7cff', '#7ed0ff'] as GradientColors}
               onPress={() => navigateTo('Settings')}
             />
           </View>
@@ -163,6 +167,58 @@ export default function DashboardScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Emotion Practice Submenu Modal */}
+      <Modal
+        visible={showEmotionPracticeMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEmotionPracticeMenu(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <GlassCard style={styles.submenuCard}>
+            <Text style={styles.submenuTitle}>Choose Practice Mode</Text>
+            <Text style={styles.submenuSubtitle}>How do you want to practice?</Text>
+
+            <View style={styles.submenuButtons}>
+              <TouchableOpacity
+                style={styles.submenuButton}
+                onPress={() => selectEmotionPracticeMode('recognition')}
+              >
+                <LinearGradient
+                  colors={AURA_COLORS.gradients.primary}
+                  style={styles.submenuButtonGradient}
+                >
+                  <Text style={styles.submenuButtonIcon}>😊</Text>
+                  <Text style={styles.submenuButtonText}>Recognition Game</Text>
+                  <Text style={styles.submenuButtonDesc}>Identify emotions from images</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.submenuButton}
+                onPress={() => selectEmotionPracticeMode('speech')}
+              >
+                <LinearGradient
+                  colors={AURA_COLORS.gradients.secondary}
+                  style={styles.submenuButtonGradient}
+                >
+                  <Text style={styles.submenuButtonIcon}>🎤</Text>
+                  <Text style={styles.submenuButtonText}>Speech Practice</Text>
+                  <Text style={styles.submenuButtonDesc}>Say emotions out loud</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.submenuCancelButton}
+              onPress={() => setShowEmotionPracticeMenu(false)}
+            >
+              <Text style={styles.submenuCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </GlassCard>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -171,7 +227,7 @@ interface FeatureTileProps {
   title: string;
   subtitle: string;
   icon: string;
-  gradient: string[];
+  gradient: GradientColors;
   onPress: () => void;
 }
 
@@ -361,6 +417,71 @@ const styles = StyleSheet.create({
     color: AURA_COLORS.dangerDark,
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  submenuCard: {
+    padding: 24,
+    alignItems: 'center',
+    gap: 20,
+  },
+  submenuTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.6,
+    textAlign: 'center',
+  },
+  submenuSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
+    textAlign: 'center',
+  },
+  submenuButtons: {
+    width: '100%',
+    gap: 16,
+  },
+  submenuButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  submenuButtonGradient: {
+    padding: 20,
+    alignItems: 'center',
+    gap: 8,
+  },
+  submenuButtonIcon: {
+    fontSize: 40,
+  },
+  submenuButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.5,
+  },
+  submenuButtonDesc: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.3,
+  },
+  submenuCancelButton: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  submenuCancelText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: AURA_FONTS.pixel,
     letterSpacing: 0.3,
   },

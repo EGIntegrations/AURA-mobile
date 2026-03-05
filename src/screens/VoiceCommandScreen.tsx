@@ -18,6 +18,7 @@ import GlassButton from '../components/GlassButton';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import { Logger } from '../services/Logger';
 
 interface CommandDefinition {
   label: string;
@@ -77,7 +78,7 @@ export default function VoiceCommandScreen({ navigation }: any) {
   });
 
   useSpeechRecognitionEvent('error', (event) => {
-    console.error('Voice command error:', event.error);
+    Logger.warn('Voice command recognition error', String(event.error));
     setIsListening(false);
   });
 
@@ -108,7 +109,7 @@ export default function VoiceCommandScreen({ navigation }: any) {
         maxAlternatives: 1,
       });
     } catch (error) {
-      console.error('Start listening error:', error);
+      Logger.warn('Voice command start failed', Logger.fromError(error));
       setIsListening(false);
     }
   };
@@ -117,7 +118,7 @@ export default function VoiceCommandScreen({ navigation }: any) {
     try {
       ExpoSpeechRecognitionModule.stop();
     } catch (error) {
-      console.error('Stop listening error:', error);
+      Logger.warn('Voice command stop failed', Logger.fromError(error));
     } finally {
       setIsListening(false);
     }

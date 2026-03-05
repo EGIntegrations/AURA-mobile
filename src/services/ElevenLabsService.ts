@@ -2,9 +2,11 @@ import axios from 'axios';
 import { Buffer } from 'buffer';
 import { APIKeyService } from './APIKeyService';
 import { BackendClient } from './BackendClient';
+import { Logger } from './Logger';
 
 export class ElevenLabsService {
   private static readonly BASE_URL = 'https://api.elevenlabs.io/v1';
+  private static readonly REQUEST_TIMEOUT_MS = 15000;
 
   // Default voice IDs (can be customized)
   private static readonly VOICE_IDS = {
@@ -54,6 +56,7 @@ export class ElevenLabsService {
             'Content-Type': 'application/json',
           },
           responseType: 'arraybuffer',
+          timeout: this.REQUEST_TIMEOUT_MS,
         }
       );
 
@@ -61,7 +64,7 @@ export class ElevenLabsService {
       const base64Audio = Buffer.from(response.data, 'binary').toString('base64');
       return `data:audio/mpeg;base64,${base64Audio}`;
     } catch (error) {
-      console.error('ElevenLabs TTS error:', error);
+      Logger.warn('ElevenLabs TTS failed', Logger.fromError(error));
       throw new Error('Failed to generate speech');
     }
   }
@@ -78,11 +81,12 @@ export class ElevenLabsService {
     try {
       const response = await axios.get(`${this.BASE_URL}/voices`, {
         headers: { 'xi-api-key': apiKey },
+        timeout: this.REQUEST_TIMEOUT_MS,
       });
 
       return response.data.voices;
     } catch (error) {
-      console.error('Failed to fetch voices:', error);
+      Logger.warn('ElevenLabs voice list failed', Logger.fromError(error));
       return [];
     }
   }

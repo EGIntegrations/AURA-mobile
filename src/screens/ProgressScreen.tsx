@@ -8,7 +8,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
-import { ALL_EMOTIONS } from '../types';
+import { ALL_EMOTIONS, type GameSession } from '../types';
 import { AURA_COLORS } from '../theme/colors';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
 import { AURA_FONTS } from '../theme/typography';
@@ -131,7 +131,7 @@ export default function ProgressScreen({ navigation }: any) {
               <Text style={styles.sectionTitle}>Achievements</Text>
               {progress.achievementsUnlocked.length > 0 ? (
                 <View style={styles.achievementsGrid}>
-                  {progress.achievementsUnlocked.map((achievement) => (
+                  {progress.achievementsUnlocked.map((achievement: string) => (
                     <View key={achievement} style={styles.achievementChip}>
                       <Text style={styles.achievementText}>{achievement}</Text>
                     </View>
@@ -147,7 +147,7 @@ export default function ProgressScreen({ navigation }: any) {
           <GlassCard cornerRadius={24}>
             <View style={styles.sessionsSection}>
               <Text style={styles.sectionTitle}>Recent Sessions</Text>
-              {progress.sessionHistory.slice(0, 4).map((session, index) => (
+              {progress.sessionHistory.slice(0, 4).map((session: GameSession) => (
                 <View key={session.id} style={styles.sessionRow}>
                   <View>
                     <Text style={styles.sessionScore}>Score: {session.score}</Text>

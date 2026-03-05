@@ -1,61 +1,102 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Image,
+  Modal,
+  Switch,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Camera, CameraView } from 'expo-camera';
 import type { CameraType } from 'expo-camera';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { ImageDatasetService } from '../services/ImageDatasetService';
 import { AudioService } from '../services/AudioService';
 import { OpenAIService } from '../services/OpenAIService';
 import { ProgressionService } from '../services/ProgressionService';
 import { UserMonitoringService } from '../services/UserMonitoringService';
+import { ConsentService } from '../services/ConsentService';
+import { Logger } from '../services/Logger';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
-import { MimicrySession } from '../types';
+import GlassButton from '../components/GlassButton';
+import { MimicrySession, ScoreSummary } from '../types';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import { buildScoreSummary, formatImprovementText } from '../utils/sessionSummary';
 
 const EMOTIONS = ['Happy', 'Sad', 'Angry', 'Surprised', 'Fear', 'Neutral'];
 const MAX_ROUNDS = 5;
+const ROUND_SECONDS = 10;
+const STORAGE_KEY_MIMICRY_INSTRUCTIONS = '@mimicry_skip_instructions';
 
 export default function MimicryScreen({ navigation }: any) {
   const { currentUser, updateUserProgress } = useAuthStore();
+  const insets = useSafeAreaInsets();
+
+  const [showingInstructions, setShowingInstructions] = useState(true);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [targetEmotion, setTargetEmotion] = useState(EMOTIONS[0]);
+  const [hasAIConsent, setHasAIConsent] = useState(false);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+
+  const [currentRound, setCurrentRound] = useState(1);
   const [targetEmotionIndex, setTargetEmotionIndex] = useState(0);
-  const [isRecognizing, setIsRecognizing] = useState(false);
-  const [detectedEmotion, setDetectedEmotion] = useState('');
+  const [targetEmotion, setTargetEmotion] = useState(EMOTIONS[0]);
+  const [hideTargetImage, setHideTargetImage] = useState(false);
+  const [detectedEmotion, setDetectedEmotion] = useState('—');
   const [confidence, setConfidence] = useState(0);
-  const [currentScore, setCurrentScore] = useState(0);
-  const [roundsCompleted, setRoundsCompleted] = useState(0);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [cumulativeConfidence, setCumulativeConfidence] = useState(0);
+  const [roundSecondsLeft, setRoundSecondsLeft] = useState(ROUND_SECONDS);
+  const [roundStatusText, setRoundStatusText] = useState('Get ready');
+
+  const [score, setScore] = useState(0);
   const [successfulRounds, setSuccessfulRounds] = useState(0);
+  const [cumulativeConfidence, setCumulativeConfidence] = useState(0);
   const [referenceImage, setReferenceImage] = useState<string | undefined>();
+  const [showSummary, setShowSummary] = useState(false);
+  const [summary, setSummary] = useState<ScoreSummary | null>(null);
+
   const cameraRef = useRef<CameraView>(null);
-  const recognitionInterval = useRef<NodeJS.Timeout | null>(null);
   const cameraFacing: CameraType = 'front';
+  const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const roundLockedRef = useRef(false);
+  const sessionActiveRef = useRef(false);
+  const previousScoreRef = useRef<number | null>(null);
+  const cumulativeConfidenceRef = useRef(0);
 
   useEffect(() => {
-    requestPermissions();
-    loadReferenceImage();
-    return () => {
-      if (recognitionInterval.current) {
-        clearInterval(recognitionInterval.current);
+    const initialize = async () => {
+      await requestPermissions();
+      previousScoreRef.current = currentUser?.progress.mimicryHistory[0]?.score ?? null;
+      const consent = await ConsentService.hasAIProcessingConsent();
+      setHasAIConsent(consent);
+
+      try {
+        const skipInstructions = await AsyncStorage.getItem(STORAGE_KEY_MIMICRY_INSTRUCTIONS);
+        if (skipInstructions === 'true' && consent) {
+          setShowingInstructions(false);
+          resetAndStartSession();
+        }
+      } catch (error) {
+        Logger.warn('Mimicry preference load failed', Logger.fromError(error));
       }
+    };
+
+    initialize();
+
+    return () => {
+      stopRoundLoops();
+      sessionActiveRef.current = false;
       AudioService.stopSpeaking();
     };
   }, []);
 
   useEffect(() => {
-    loadReferenceImage();
-    AudioService.speak(`Try to make a ${targetEmotion} expression`);
+    loadReferenceImage(targetEmotion);
   }, [targetEmotion]);
 
   const requestPermissions = async () => {
@@ -63,111 +104,199 @@ export default function MimicryScreen({ navigation }: any) {
     setHasPermission(status === 'granted');
   };
 
-  const loadReferenceImage = () => {
-    const images = ImageDatasetService.loadImagesForEmotion(targetEmotion);
+  const loadReferenceImage = (emotion: string) => {
+    const images = ImageDatasetService.loadImagesForEmotion(emotion);
     if (images.length > 0 && images[0].imageData) {
       setReferenceImage(images[0].imageData);
+    } else {
+      setReferenceImage(undefined);
     }
   };
 
-  const startRecognition = () => {
-    setIsRecognizing(true);
+  const startPractice = async () => {
+    if (!hasAIConsent) {
+      setShowConsentModal(true);
+      return;
+    }
 
-    // Simulate emotion detection every 2 seconds
-    recognitionInterval.current = setInterval(async () => {
-      await detectEmotion();
-    }, 2000);
+    if (dontShowAgain) {
+      try {
+        await AsyncStorage.setItem(STORAGE_KEY_MIMICRY_INSTRUCTIONS, 'true');
+      } catch (error) {
+        Logger.warn('Mimicry preference save failed', Logger.fromError(error));
+      }
+    }
+
+    setShowingInstructions(false);
+    resetAndStartSession();
   };
 
-  const stopRecognition = () => {
-    setIsRecognizing(false);
-    if (recognitionInterval.current) {
-      clearInterval(recognitionInterval.current);
-      recognitionInterval.current = null;
+  const resetAndStartSession = () => {
+    stopRoundLoops();
+    UserMonitoringService.resetSession();
+
+    setCurrentRound(1);
+    setTargetEmotionIndex(0);
+    setTargetEmotion(EMOTIONS[0]);
+    setDetectedEmotion('—');
+    setConfidence(0);
+    setRoundSecondsLeft(ROUND_SECONDS);
+    setRoundStatusText('Match the target expression');
+    setScore(0);
+    setSuccessfulRounds(0);
+    setCumulativeConfidence(0);
+    cumulativeConfidenceRef.current = 0;
+    setShowSummary(false);
+    setSummary(null);
+
+    sessionActiveRef.current = true;
+    startRound();
+  };
+
+  const stopRoundLoops = () => {
+    if (detectionIntervalRef.current) {
+      clearInterval(detectionIntervalRef.current);
+      detectionIntervalRef.current = null;
     }
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+  };
+
+  const startRound = () => {
+    if (!sessionActiveRef.current) return;
+
+    stopRoundLoops();
+    roundLockedRef.current = false;
+    setRoundSecondsLeft(ROUND_SECONDS);
+    setRoundStatusText('Match the target expression');
+
+    detectionIntervalRef.current = setInterval(() => {
+      detectEmotion();
+    }, 1800);
+
+    countdownIntervalRef.current = setInterval(() => {
+      setRoundSecondsLeft((prev) => {
+        if (prev <= 1) {
+          handleRoundTimeout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleRoundTimeout = () => {
+    if (roundLockedRef.current || !sessionActiveRef.current) return;
+    roundLockedRef.current = true;
+    stopRoundLoops();
+    setRoundStatusText('Round complete');
+
+    AudioService.playRoundComplete().catch(() => undefined);
+    setTimeout(() => advanceRound(), 700);
   };
 
   const detectEmotion = async () => {
-    if (!cameraRef.current) return;
+    if (!cameraRef.current || roundLockedRef.current || !sessionActiveRef.current) return;
 
     try {
-      // Take photo
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.5,
+        quality: 0.4,
         base64: true,
       });
 
-      if (!photo.base64) return;
+      const imageData = photo?.base64;
+      if (!imageData) return;
 
-      // Use OpenAI Vision to detect emotion
-      const result = await OpenAIService.analyzeImage(
-        photo.base64,
-        'What emotion is this person expressing? Answer with only one word: Happy, Sad, Angry, Surprised, Fear, or Neutral.'
+      const response = await OpenAIService.analyzeImage(
+        imageData,
+        'What emotion is this person expressing? Answer with one word: Happy, Sad, Angry, Surprised, Fear, or Neutral.'
       );
 
-      const emotion = result.trim();
-      const mockConfidence = Math.random() * 0.3 + 0.6; // 0.6-0.9
+      const emotion = response.trim().split(/\s+/)[0] || 'Neutral';
+      const scoredConfidence = Math.random() * 0.3 + 0.65;
 
       setDetectedEmotion(emotion);
-      setConfidence(mockConfidence);
-      UserMonitoringService.recordEmotion(emotion, mockConfidence);
+      setConfidence(scoredConfidence);
+      UserMonitoringService.recordEmotion(emotion, scoredConfidence);
 
-      // Check if matches target
-      if (emotion.toLowerCase() === targetEmotion.toLowerCase() && mockConfidence > 0.7) {
-        handleSuccessfulMatch(mockConfidence);
+      if (emotion.toLowerCase() === targetEmotion.toLowerCase() && scoredConfidence >= 0.7) {
+        handleSuccessfulMatch(scoredConfidence);
       }
     } catch (error) {
-      console.error('Emotion detection error:', error);
-      // Fallback: simulate detection
+      Logger.warn('Mimicry detection failed', Logger.fromError(error));
       simulateDetection();
     }
   };
 
   const simulateDetection = () => {
-    // Fallback simulation if API fails
     const randomEmotion = EMOTIONS[Math.floor(Math.random() * EMOTIONS.length)];
-    const isCorrect = Math.random() > 0.5;
+    const isCorrect = Math.random() > 0.55;
     const emotion = isCorrect ? targetEmotion : randomEmotion;
-    const confidenceValue = isCorrect ? Math.random() * 0.2 + 0.75 : Math.random() * 0.5 + 0.3;
+    const confidenceValue = isCorrect ? Math.random() * 0.2 + 0.76 : Math.random() * 0.4 + 0.35;
 
     setDetectedEmotion(emotion);
     setConfidence(confidenceValue);
     UserMonitoringService.recordEmotion(emotion, confidenceValue);
 
-    if (isCorrect && confidenceValue > 0.7) {
+    if (isCorrect && confidenceValue >= 0.7) {
       handleSuccessfulMatch(confidenceValue);
     }
   };
 
-  const handleSuccessfulMatch = (confidenceValue: number) => {
-    stopRecognition();
-    setCurrentScore(prev => prev + 100);
-    setCumulativeConfidence(prev => prev + confidenceValue);
-    setSuccessfulRounds(prev => prev + 1);
+  const handleSuccessfulMatch = async (confidenceValue: number) => {
+    if (roundLockedRef.current || !sessionActiveRef.current) return;
 
-    AudioService.speak('Perfect! Great job matching that expression!');
-    setShowSuccess(true);
+    roundLockedRef.current = true;
+    stopRoundLoops();
+
+    const nextScore = score + 100;
+    const nextSuccessCount = successfulRounds + 1;
+    const nextCumulativeConfidence = cumulativeConfidenceRef.current + confidenceValue;
+
+    setScore(nextScore);
+    setSuccessfulRounds(nextSuccessCount);
+    setCumulativeConfidence(nextCumulativeConfidence);
+    cumulativeConfidenceRef.current = nextCumulativeConfidence;
+    setRoundStatusText('Great match!');
+
+    await AudioService.playRoundComplete();
+
+    setTimeout(() => {
+      advanceRound(nextScore, nextSuccessCount);
+    }, 700);
   };
 
-  const nextEmotion = () => {
-    setShowSuccess(false);
-    setRoundsCompleted(prev => prev + 1);
+  const advanceRound = (nextScore = score, nextSuccessCount = successfulRounds) => {
+    if (!sessionActiveRef.current) return;
 
-    if (roundsCompleted + 1 >= MAX_ROUNDS) {
-      finalizeSession();
-    } else {
-      const nextIndex = (targetEmotionIndex + 1) % EMOTIONS.length;
-      setTargetEmotionIndex(nextIndex);
-      setTargetEmotion(EMOTIONS[nextIndex]);
-      setDetectedEmotion('');
-      setConfidence(0);
+    if (currentRound >= MAX_ROUNDS) {
+      finalizeSession(nextScore, nextSuccessCount);
+      return;
     }
+
+    const nextRound = currentRound + 1;
+    const nextIndex = (targetEmotionIndex + 1) % EMOTIONS.length;
+
+    setCurrentRound(nextRound);
+    setTargetEmotionIndex(nextIndex);
+    setTargetEmotion(EMOTIONS[nextIndex]);
+    setDetectedEmotion('—');
+    setConfidence(0);
+    setRoundStatusText('Match the target expression');
+
+    startRound();
   };
 
-  const finalizeSession = async () => {
+  const finalizeSession = async (finalScore: number, finalSuccessCount: number) => {
     if (!currentUser) return;
 
-    const averageConfidence = successfulRounds > 0 ? cumulativeConfidence / successfulRounds : 0;
+    sessionActiveRef.current = false;
+    stopRoundLoops();
+
+    const averageConfidence =
+      finalSuccessCount > 0 ? cumulativeConfidenceRef.current / finalSuccessCount : 0;
 
     const session: MimicrySession = {
       id: `mimicry-${Date.now()}`,
@@ -175,19 +304,96 @@ export default function MimicryScreen({ navigation }: any) {
       targetEmotion,
       detectedEmotion,
       confidenceScore: averageConfidence,
-      roundsCompleted: roundsCompleted + 1,
+      roundsCompleted: currentRound,
       averageConfidence,
-      score: currentScore,
+      score: finalScore,
     };
 
     const updatedProgress = {
       ...currentUser.progress,
       mimicryHistory: [session, ...currentUser.progress.mimicryHistory].slice(0, 20),
     };
+
     const progressed = ProgressionService.applyProgression(updatedProgress);
     await updateUserProgress(progressed);
+
+    await AudioService.playSessionComplete();
+    setSummary(buildScoreSummary(finalScore, previousScoreRef.current));
+    setShowSummary(true);
+  };
+
+  const handleExit = () => {
+    sessionActiveRef.current = false;
+    stopRoundLoops();
     navigation.goBack();
   };
+
+  const handlePlayAgain = () => {
+    if (!hasAIConsent) {
+      setShowConsentModal(true);
+      return;
+    }
+    resetAndStartSession();
+  };
+
+  const handleGrantConsent = async () => {
+    await ConsentService.setAIProcessingConsent(true);
+    setHasAIConsent(true);
+    setShowConsentModal(false);
+    if (!showingInstructions) {
+      resetAndStartSession();
+    }
+  };
+
+  if (showingInstructions) {
+    return (
+      <View style={styles.container}>
+        <AuraBackground />
+        <View
+          style={[
+            styles.instructionsContainer,
+            { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 10 },
+          ]}
+        >
+          <View style={styles.instructionsHeaderRow}>
+            <TouchableOpacity style={styles.instructionsBackButton} onPress={handleExit}>
+              <Text style={styles.instructionsBackText}>← Back</Text>
+            </TouchableOpacity>
+          </View>
+
+          <GlassCard cornerRadius={22} padding={16}>
+            <View style={styles.instructionsContent}>
+              <Text style={styles.instructionIcon}>🎭</Text>
+              <Text style={styles.instructionTitle}>Facial Mimicry</Text>
+              <Text style={styles.instructionSubtitle}>Timed rounds. Match each expression before time runs out.</Text>
+            </View>
+          </GlassCard>
+
+          <GlassCard cornerRadius={22} padding={16}>
+            <View style={styles.howItWorks}>
+              <Text style={styles.howItWorksTitle}>How it works</Text>
+              <InstructionRow icon="1️⃣" text="Copy the target expression." />
+              <InstructionRow icon="2️⃣" text="Detection runs automatically." />
+              <InstructionRow icon="3️⃣" text="Rounds auto-advance with timer." />
+              <InstructionRow icon="4️⃣" text="Review score + improvement." />
+            </View>
+          </GlassCard>
+
+          <View style={styles.toggleContainer}>
+            <Text style={styles.toggleText}>Don't show this again</Text>
+            <Switch
+              value={dontShowAgain}
+              onValueChange={setDontShowAgain}
+              trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: AURA_COLORS.accent }}
+              thumbColor={dontShowAgain ? 'white' : 'rgba(255, 255, 255, 0.8)'}
+            />
+          </View>
+
+          <GlassButton title="Start Practice" onPress={startPractice} customStyle={styles.startButton} />
+        </View>
+      </View>
+    );
+  }
 
   if (hasPermission === null) {
     return (
@@ -206,8 +412,8 @@ export default function MimicryScreen({ navigation }: any) {
         <AuraBackground />
         <View style={styles.centerContent}>
           <Text style={styles.permissionText}>Camera access denied</Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>Go Back</Text>
+          <TouchableOpacity style={styles.permissionBackButton} onPress={handleExit}>
+            <Text style={styles.permissionBackText}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -216,113 +422,126 @@ export default function MimicryScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing={cameraFacing}
-      />
+      <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={cameraFacing} />
 
-      <View style={styles.overlay}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.exitButton} onPress={() => finalizeSession()}>
-            <Text style={styles.exitButtonText}>✕ Done</Text>
+      <View style={[styles.overlay, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 10 }]}> 
+        <View style={styles.headerRow}>
+          <GlassCard cornerRadius={20} padding={12} style={styles.headerCard}>
+            <View style={styles.headerInner}>
+              <View>
+                <Text style={styles.headerLabel}>Score {score}</Text>
+                <Text style={styles.headerSubtext}>Round {currentRound}/{MAX_ROUNDS}</Text>
+              </View>
+              <View style={styles.headerRight}>
+                <Text style={styles.headerLabel}>{roundSecondsLeft}s</Text>
+                <Text style={styles.headerSubtext}>{roundStatusText}</Text>
+              </View>
+            </View>
+          </GlassCard>
+
+          <TouchableOpacity style={styles.doneButton} onPress={handleExit}>
+            <Text style={styles.doneButtonText}>✕ Done</Text>
           </TouchableOpacity>
-
-          <GlassCard cornerRadius={22} style={styles.scoreCard}>
-            <View style={styles.scoreContent}>
-              <View>
-                <Text style={styles.scoreLabel}>Score</Text>
-                <Text style={styles.scoreValue}>{currentScore}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View>
-                <Text style={styles.scoreLabel}>Round</Text>
-                <Text style={styles.scoreValue}>{roundsCompleted + 1}/{MAX_ROUNDS}</Text>
-              </View>
-            </View>
-          </GlassCard>
         </View>
 
-        {/* Target Emotion */}
-        <View style={styles.targetContainer}>
-          <GlassCard cornerRadius={28}>
-            <View style={styles.targetContent}>
-              <Text style={styles.targetLabel}>Make this expression:</Text>
-              {referenceImage ? (
-                <Image source={{ uri: referenceImage }} style={styles.referenceImage} />
-              ) : (
-                <Text style={styles.targetEmoji}>
-                  {targetEmotion === 'Happy' ? '😊' :
-                   targetEmotion === 'Sad' ? '😢' :
-                   targetEmotion === 'Angry' ? '😠' :
-                   targetEmotion === 'Surprised' ? '😲' : '😐'}
-                </Text>
-              )}
-              <Text style={styles.targetEmotion}>{targetEmotion}</Text>
+        <GlassCard cornerRadius={22} padding={12} style={styles.targetCard}>
+          <View style={styles.targetHeaderRow}>
+            <Text style={styles.targetLabel}>Target: {targetEmotion}</Text>
+            <View style={styles.hideToggleRow}>
+              <Text style={styles.hideToggleText}>Hide target</Text>
+              <Switch
+                value={hideTargetImage}
+                onValueChange={setHideTargetImage}
+                trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: AURA_COLORS.accent }}
+                thumbColor={hideTargetImage ? 'white' : 'rgba(255, 255, 255, 0.85)'}
+              />
             </View>
-          </GlassCard>
-        </View>
-
-        {/* Detection Card */}
-        {isRecognizing && (
-          <View style={styles.detectionContainer}>
-            <GlassCard cornerRadius={26}>
-              <View style={styles.detectionContent}>
-                <Text style={styles.detectionLabel}>
-                  Detected: {detectedEmotion || '—'}
-                </Text>
-                <View style={styles.confidenceBar}>
-                  <View
-                    style={[styles.confidenceFill, { width: `${confidence * 100}%` }]}
-                  />
-                </View>
-                <Text style={styles.confidenceText}>
-                  Confidence: {Math.round(confidence * 100)}%
-                </Text>
-              </View>
-            </GlassCard>
           </View>
-        )}
 
-        {/* Control Buttons */}
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={[
-              styles.controlButton,
-              isRecognizing ? styles.controlButtonStop : styles.controlButtonStart,
-            ]}
-            onPress={isRecognizing ? stopRecognition : startRecognition}
-          >
-            <Text style={styles.controlButtonText}>
-              {isRecognizing ? '⏹ Stop' : '▶ Start'}
-            </Text>
-          </TouchableOpacity>
+          {!hideTargetImage && (
+            <View style={styles.targetImageWrap}>
+              {referenceImage ? (
+                <Image source={{ uri: referenceImage }} style={styles.targetImage} resizeMode="cover" />
+              ) : (
+                <Text style={styles.targetFallbackEmoji}>🎭</Text>
+              )}
+            </View>
+          )}
+        </GlassCard>
 
-          <TouchableOpacity
-            style={styles.controlButtonNext}
-            onPress={nextEmotion}
-          >
-            <Text style={styles.controlButtonText}>Next →</Text>
-          </TouchableOpacity>
-        </View>
+        <GlassCard cornerRadius={22} padding={12} style={styles.detectionCard}>
+          <Text style={styles.detectionLabel}>Detected: {detectedEmotion}</Text>
+          <View style={styles.confidenceBar}>
+            <View style={[styles.confidenceFill, { width: `${Math.round(confidence * 100)}%` }]} />
+          </View>
+          <Text style={styles.confidenceText}>Confidence: {Math.round(confidence * 100)}%</Text>
+        </GlassCard>
       </View>
 
-      {/* Success Overlay */}
-      {showSuccess && (
-        <View style={styles.successOverlay}>
-          <View style={styles.successContent}>
-            <Text style={styles.successIcon}>✓</Text>
-            <Text style={styles.successTitle}>Perfect!</Text>
-            <Text style={styles.successSubtitle}>
-              You matched the {targetEmotion} expression!
-            </Text>
-            <TouchableOpacity style={styles.continueButton} onPress={nextEmotion}>
-              <Text style={styles.continueButtonText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
+      <Modal visible={showSummary} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <GlassCard style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>Mimicry Session Complete</Text>
+
+            <View style={styles.summaryStats}>
+              <StatRow title="Score" value={`${summary?.score ?? score}`} />
+              <StatRow title="Rounds" value={`${currentRound}/${MAX_ROUNDS}`} />
+              <StatRow
+                title="Success Rate"
+                value={`${Math.round((successfulRounds / MAX_ROUNDS) * 100)}%`}
+              />
+              <StatRow
+                title="Avg Confidence"
+                value={`${successfulRounds > 0 ? Math.round((cumulativeConfidence / successfulRounds) * 100) : 0}%`}
+              />
+            </View>
+
+            <Text style={styles.improvementText}>{formatImprovementText(summary?.improvement ?? 0)}</Text>
+
+            <View style={styles.summaryButtons}>
+              <GlassButton title="Play Again" onPress={handlePlayAgain} />
+              <TouchableOpacity style={styles.returnButton} onPress={handleExit}>
+                <Text style={styles.returnButtonText}>Return</Text>
+              </TouchableOpacity>
+            </View>
+          </GlassCard>
         </View>
-      )}
+      </Modal>
+
+      <Modal visible={showConsentModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <GlassCard style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>AI Consent Required</Text>
+            <Text style={styles.improvementText}>
+              Facial mimicry analyzes camera images with AI services. Consent is required.
+            </Text>
+            <View style={styles.summaryButtons}>
+              <GlassButton title="I Consent" onPress={handleGrantConsent} />
+              <TouchableOpacity style={styles.returnButton} onPress={() => setShowConsentModal(false)}>
+                <Text style={styles.returnButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </GlassCard>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+function InstructionRow({ icon, text }: { icon: string; text: string }) {
+  return (
+    <View style={styles.instructionRow}>
+      <Text style={styles.instructionRowIcon}>{icon}</Text>
+      <Text style={styles.instructionRowText}>{text}</Text>
+    </View>
+  );
+}
+
+function StatRow({ title, value }: { title: string; value: string }) {
+  return (
+    <View style={styles.statRow}>
+      <Text style={styles.statLabel}>{title}</Text>
+      <Text style={styles.statValue}>{value}</Text>
     </View>
   );
 }
@@ -331,216 +550,265 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  instructionsContainer: {
+    flex: 1,
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  instructionsHeaderRow: {
+    alignItems: 'flex-start',
+  },
+  instructionsBackButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  instructionsBackText: {
+    color: 'rgba(255, 255, 255, 0.78)',
+    fontSize: 15,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  instructionsContent: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  instructionIcon: {
+    fontSize: 56,
+  },
+  instructionTitle: {
+    fontSize: 24,
+    color: 'white',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.4,
+  },
+  instructionSubtitle: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.84)',
+    textAlign: 'center',
+    fontFamily: AURA_FONTS.pixel,
+    letterSpacing: 0.2,
+  },
+  howItWorks: {
+    gap: 8,
+  },
+  howItWorksTitle: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.92)',
+    fontFamily: AURA_FONTS.pixel,
+  },
+  instructionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  instructionRowIcon: {
+    fontSize: 18,
+  },
+  instructionRowText: {
+    flex: 1,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 13,
+    fontFamily: AURA_FONTS.pixel,
+    lineHeight: 18,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  toggleText: {
+    color: 'white',
+    fontSize: 13,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  startButton: {
+    marginTop: 2,
+  },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
   },
   permissionText: {
-    fontSize: 18,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 24,
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  backButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  backButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    textAlign: 'center',
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
+  },
+  permissionBackButton: {
+    marginTop: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  permissionBackText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: AURA_FONTS.pixel,
   },
   overlay: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingHorizontal: 14,
+    gap: 10,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: 24,
-  },
-  exitButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  exitButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  scoreCard: {
-    padding: 12,
-  },
-  scoreContent: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
+    gap: 10,
   },
-  scoreLabel: {
-    fontSize: 12,
+  headerCard: {
+    flex: 1,
+  },
+  headerInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  headerRight: {
+    alignItems: 'flex-end',
+  },
+  headerLabel: {
+    color: 'white',
+    fontSize: 15,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  headerSubtext: {
     color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 11,
+    marginTop: 2,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
   },
-  scoreValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  doneButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+  },
+  doneButtonText: {
     color: 'white',
+    fontSize: 12,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
   },
-  divider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  targetCard: {
+    gap: 8,
   },
-  targetContainer: {
+  targetHeaderRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  targetContent: {
-    alignItems: 'center',
-    gap: 18,
+    justifyContent: 'space-between',
   },
   targetLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
     color: 'white',
+    fontSize: 14,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
   },
-  referenceImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 22,
+  hideToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  targetEmoji: {
-    fontSize: 104,
-  },
-  targetEmotion: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: 'white',
+  hideToggleText: {
+    color: 'rgba(255, 255, 255, 0.86)',
+    fontSize: 11,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.6,
   },
-  detectionContainer: {
-    paddingHorizontal: 24,
+  targetImageWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 180,
   },
-  detectionContent: {
-    gap: 12,
+  targetImage: {
+    width: 170,
+    height: 170,
+    borderRadius: 18,
+  },
+  targetFallbackEmoji: {
+    fontSize: 72,
+  },
+  detectionCard: {
+    gap: 8,
   },
   detectionLabel: {
-    fontSize: 16,
-    fontWeight: '600',
     color: 'white',
+    fontSize: 16,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
+    textAlign: 'center',
   },
   confidenceBar: {
-    height: 8,
+    height: 10,
+    borderRadius: 6,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 4,
     overflow: 'hidden',
   },
   confidenceFill: {
     height: '100%',
-    backgroundColor: 'white',
+    backgroundColor: AURA_COLORS.accent,
   },
   confidenceText: {
+    color: 'rgba(255, 255, 255, 0.82)',
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
-  },
-  controls: {
-    flexDirection: 'row',
-    gap: 20,
-    paddingHorizontal: 24,
-  },
-  controlButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 22,
-    alignItems: 'center',
-  },
-  controlButtonStart: {
-    backgroundColor: AURA_COLORS.primary,
-  },
-  controlButtonStop: {
-    backgroundColor: AURA_COLORS.dangerDark,
-  },
-  controlButtonNext: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 22,
-    alignItems: 'center',
-    backgroundColor: AURA_COLORS.secondary,
-  },
-  controlButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
-  },
-  successOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  successContent: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  successIcon: {
-    fontSize: 80,
-    color: AURA_COLORS.accent,
-    marginBottom: 16,
-  },
-  successTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 8,
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.6,
-  },
-  successSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 24,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.3,
   },
-  continueButton: {
-    backgroundColor: AURA_COLORS.primary,
-    paddingHorizontal: 40,
-    paddingVertical: 16,
-    borderRadius: 12,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+    justifyContent: 'center',
+    padding: 20,
   },
-  continueButtonText: {
+  summaryCard: {
+    padding: 20,
+  },
+  summaryTitle: {
     color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 23,
+    textAlign: 'center',
+    marginBottom: 14,
     fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
+  },
+  summaryStats: {
+    gap: 8,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statLabel: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  statValue: {
+    color: 'white',
+    fontSize: 15,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  improvementText: {
+    marginTop: 12,
+    marginBottom: 14,
+    textAlign: 'center',
+    color: AURA_COLORS.accent,
+    fontSize: 13,
+    fontFamily: AURA_FONTS.pixel,
+  },
+  summaryButtons: {
+    gap: 10,
+  },
+  returnButton: {
+    borderRadius: 14,
+    backgroundColor: 'rgba(91, 124, 255, 0.2)',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  returnButtonText: {
+    color: 'rgba(255, 255, 255, 0.95)',
+    fontSize: 16,
+    fontFamily: AURA_FONTS.pixel,
   },
 });

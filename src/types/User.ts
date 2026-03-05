@@ -1,3 +1,5 @@
+import type { PlayerProgress } from './Game';
+
 export interface User {
   id: string;
   username: string;

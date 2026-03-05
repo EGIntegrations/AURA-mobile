@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { User, UserRole } from '../types';
 import { AuthenticationService } from '../services/AuthenticationService';
 import { BiometricService } from '../services/BiometricService';
+import { Logger } from '../services/Logger';
 
 interface AuthStore {
   currentUser: User | null;
@@ -112,7 +113,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         set({ currentUser: user, isAuthenticated: true });
       }
     } catch (error) {
-      console.error('Failed to initialize auth:', error);
+      Logger.error('Auth initialization failed', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       set({ isLoading: false });
     }

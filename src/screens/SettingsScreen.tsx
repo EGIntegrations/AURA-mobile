@@ -11,6 +11,7 @@ import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import GlassButton from '../components/GlassButton';
 import { BiometricService } from '../services/BiometricService';
+import { ConsentService } from '../services/ConsentService';
 import { AURA_COLORS } from '../theme/colors';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
 import { AURA_FONTS } from '../theme/typography';
@@ -21,6 +22,7 @@ export default function SettingsScreen({ navigation }: any) {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState('Biometric Login');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [aiConsentEnabled, setAiConsentEnabled] = useState(false);
 
   useEffect(() => {
     const loadBiometricStatus = async () => {
@@ -28,14 +30,17 @@ export default function SettingsScreen({ navigation }: any) {
         const canAuth = await BiometricService.canAuthenticate();
         const enabled = await BiometricService.isEnabled();
         const type = await BiometricService.getBiometricType();
+        const aiConsent = await ConsentService.hasAIProcessingConsent();
         const label =
           type === 'faceId' ? 'Face ID' : type === 'touchId' || type === 'fingerprint' ? 'Touch ID' : 'Biometric';
         setBiometricLabel(label);
         setBiometricAvailable(canAuth);
         setBiometricEnabled(enabled);
+        setAiConsentEnabled(aiConsent);
       } catch (error) {
         setBiometricAvailable(false);
         setBiometricEnabled(false);
+        setAiConsentEnabled(false);
       }
     };
 
@@ -61,6 +66,14 @@ export default function SettingsScreen({ navigation }: any) {
       setBiometricEnabled(await BiometricService.isEnabled());
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleToggleAIConsent = async (value: boolean) => {
+    await ConsentService.setAIProcessingConsent(value);
+    setAiConsentEnabled(value);
+    if (!value) {
+      Alert.alert('AI Consent', 'AI-powered camera and conversation features are now disabled.');
     }
   };
 
@@ -112,6 +125,29 @@ export default function SettingsScreen({ navigation }: any) {
             onPress={() => navigation.navigate('VoiceCommands')}
             customStyle={styles.actionButton}
           />
+        </GlassCard>
+
+        <GlassCard>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>AI Data Processing</Text>
+            <Text style={styles.sectionSubtitle}>
+              Required for AI conversation and camera emotion analysis.
+            </Text>
+          </View>
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Allow AI processing</Text>
+              <Text style={styles.settingDescription}>
+                Your text/audio/images may be sent to configured AI services.
+              </Text>
+            </View>
+            <Switch
+              value={aiConsentEnabled}
+              onValueChange={handleToggleAIConsent}
+              trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: AURA_COLORS.accentSoft }}
+              thumbColor={aiConsentEnabled ? AURA_COLORS.accent : 'rgba(255, 255, 255, 0.9)'}
+            />
+          </View>
         </GlassCard>
       </View>
     </View>
