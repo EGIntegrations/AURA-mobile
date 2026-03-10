@@ -1,0 +1,884 @@
+{
+  "summary": {
+    "generatedAt": "2026-03-10T23:40:32.478Z",
+    "totalFiles": 110,
+    "activeFiles": 60,
+    "legacyFiles": 50
+  },
+  "files": [
+    {
+      "scope": "active",
+      "path": ".github/workflows/ci.yml",
+      "responsibility": "CI workflow automation definition.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/.github/workflows/ci.yml"
+    },
+    {
+      "scope": "active",
+      "path": "app.config.js",
+      "responsibility": "Expo runtime/build configuration consumed by the mobile app.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/app.config.js"
+    },
+    {
+      "scope": "active",
+      "path": "app.json",
+      "responsibility": "Expo runtime/build configuration consumed by the mobile app.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/app.json"
+    },
+    {
+      "scope": "active",
+      "path": "App.tsx",
+      "responsibility": "Mobile application root entry and navigator bootstrap.",
+      "exports": [
+        "App"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/App.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "docs/API_SETUP_GUIDE.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/API_SETUP_GUIDE.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/AWS_BACKEND_PLAN.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/AWS_BACKEND_PLAN.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/BACKEND_SETUP.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/BACKEND_SETUP.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/CLAUDE_SESSION_CONTEXT.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/CLAUDE_SESSION_CONTEXT.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/CODEX.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/CODEX.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/NEXT_STEPS.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/NEXT_STEPS.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/PRIVACY_COMPLIANCE.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/PRIVACY_COMPLIANCE.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/PROJECT_STATUS_REPORT.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/PROJECT_STATUS_REPORT.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/REACT_NATIVE_MIGRATION_COMPLETE.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/REACT_NATIVE_MIGRATION_COMPLETE.md"
+    },
+    {
+      "scope": "active",
+      "path": "docs/SETUP_GUIDE.md",
+      "responsibility": "Project documentation source material maintained in this repository.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/docs/SETUP_GUIDE.md"
+    },
+    {
+      "scope": "active",
+      "path": "eas.json",
+      "responsibility": "Expo Application Services build profile configuration.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/eas.json"
+    },
+    {
+      "scope": "active",
+      "path": "package.json",
+      "responsibility": "Project dependency and script manifest.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/package.json"
+    },
+    {
+      "scope": "active",
+      "path": "src/components/AuraBackground.tsx",
+      "responsibility": "Reusable UI components.",
+      "exports": [
+        "AuraBackground"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/components/AuraBackground.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/components/GlassButton.tsx",
+      "responsibility": "Reusable UI components.",
+      "exports": [
+        "GlassButton"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/components/GlassButton.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/components/GlassCard.tsx",
+      "responsibility": "Reusable UI components.",
+      "exports": [
+        "GlassCard"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/components/GlassCard.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/components/LiquidGlassHeader.tsx",
+      "responsibility": "Reusable UI components.",
+      "exports": [
+        "LiquidGlassHeader"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/components/LiquidGlassHeader.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/navigation/RootNavigator.tsx",
+      "responsibility": "Navigation graph and screen routing logic.",
+      "exports": [
+        "RootNavigator"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/navigation/RootNavigator.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/AdminDashboardScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "AdminDashboardScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/AdminDashboardScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/APIKeyConfigScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "APIKeyConfigScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/APIKeyConfigScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/AuthenticationScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "AuthenticationScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/AuthenticationScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/ConversationScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "ConversationScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/ConversationScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/DashboardScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "DashboardScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/DashboardScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/GameScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "GameScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/GameScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/MimicryScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "MimicryScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/MimicryScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/ProgressScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "ProgressScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/ProgressScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/SettingsScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "SettingsScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/SettingsScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/SpeechPracticeScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "SpeechPracticeScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/SpeechPracticeScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/VisionTrainingScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "VisionTrainingScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/VisionTrainingScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/screens/VoiceCommandScreen.tsx",
+      "responsibility": "Mobile UI screen implementation for an end-user workflow.",
+      "exports": [
+        "VoiceCommandScreen"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/screens/VoiceCommandScreen.tsx"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/APIKeyService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "APIKeyService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/APIKeyService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/AudioService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "AudioService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/AudioService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/AuthenticationService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "AuthenticationService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/AuthenticationService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/BackendAuthService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "BackendAuthService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/BackendAuthService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/BackendClient.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "BackendClient"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/BackendClient.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/BiometricService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "BiometricService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/BiometricService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/ConsentService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "ConsentService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/ConsentService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/ConversationService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "CONVERSATION_SCENARIOS",
+        "ConversationMessage",
+        "ConversationScenario",
+        "ConversationService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/ConversationService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/CurriculumEngine.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "CurriculumEngine"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/CurriculumEngine.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/ElevenLabsService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "ElevenLabsService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/ElevenLabsService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/ImageDatasetService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "ImageDatasetService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/ImageDatasetService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/ImageGenerationService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "ImageGenerationService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/ImageGenerationService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/Logger.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "Logger"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/Logger.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/OpenAIService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "OpenAIService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/OpenAIService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/ProgressionService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "ProgressionService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/ProgressionService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/services/UserMonitoringService.ts",
+      "responsibility": "Service-layer logic handling platform behavior and integrations.",
+      "exports": [
+        "UserMonitoringService"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/services/UserMonitoringService.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/store/authStore.ts",
+      "responsibility": "Client state management and state actions.",
+      "exports": [
+        "useAuthStore"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/store/authStore.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/theme/colors.ts",
+      "responsibility": "Visual design tokens and typography settings.",
+      "exports": [
+        "AURA_COLORS",
+        "GradientColors"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/theme/colors.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/theme/typography.ts",
+      "responsibility": "Visual design tokens and typography settings.",
+      "exports": [
+        "AURA_FONTS",
+        "AURA_TEXT"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/theme/typography.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/types/Game.ts",
+      "responsibility": "Shared type contracts across app features.",
+      "exports": [
+        "ALL_EMOTIONS",
+        "ConversationMessageMeta",
+        "ConversationSummary",
+        "Emotion",
+        "GameSession",
+        "MimicrySession",
+        "PlayerProgress",
+        "ScoreSummary",
+        "SpeechPracticeResult"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/types/Game.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/types/index.ts",
+      "responsibility": "Shared type contracts across app features.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/types/index.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/types/Monitoring.ts",
+      "responsibility": "Shared type contracts across app features.",
+      "exports": [
+        "EmotionalState",
+        "EngagementLevel",
+        "FrustrationLevel",
+        "MonitoringStats"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/types/Monitoring.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/types/Question.ts",
+      "responsibility": "Shared type contracts across app features.",
+      "exports": [
+        "GameQuestion"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/types/Question.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/types/User.ts",
+      "responsibility": "Shared type contracts across app features.",
+      "exports": [
+        "Permission",
+        "User",
+        "UserRole",
+        "UserSettings"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/types/User.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/utils/polyfills.ts",
+      "responsibility": "Utility helpers used across the app.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/utils/polyfills.ts"
+    },
+    {
+      "scope": "active",
+      "path": "src/utils/sessionSummary.ts",
+      "responsibility": "Utility helpers used across the app.",
+      "exports": [
+        "buildScoreSummary",
+        "formatImprovementText"
+      ],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/src/utils/sessionSummary.ts"
+    },
+    {
+      "scope": "active",
+      "path": "tsconfig.json",
+      "responsibility": "Repository source file used by the AURA platform.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/tsconfig.json"
+    },
+    {
+      "scope": "legacy",
+      "path": "AI/AITherapyManager.swift",
+      "responsibility": "Archived AI prototype logic from pre-React Native implementation.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/AI/AITherapyManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Assets.xcassets/AccentColor.colorset/Contents.json",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Assets.xcassets/AccentColor.colorset/Contents.json"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Assets.xcassets/AppIcon.appiconset/Contents.json"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Assets.xcassets/Contents.json",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Assets.xcassets/Contents.json"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/AutismTrainerAppApp.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/AutismTrainerAppApp.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/AutismTrainerAppTests/AutismTrainerAppTests.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/AutismTrainerAppTests/AutismTrainerAppTests.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/AutismTrainerAppUITests/AutismTrainerAppUITests.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/AutismTrainerAppUITests/AutismTrainerAppUITests.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/AutismTrainerAppUITests/AutismTrainerAppUITestsLaunchTests.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/AutismTrainerAppUITests/AutismTrainerAppUITestsLaunchTests.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/fix_framework_linking.sh",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/fix_framework_linking.sh"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/FOUNDATION_MODELS_README.md",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/FOUNDATION_MODELS_README.md"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Info.plist",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Info.plist"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Item.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Item.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Models/GameModels.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Models/GameModels.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Models/GameQuestion.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Models/GameQuestion.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Models/UserModels.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Models/UserModels.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/PERSISTENT_ISSUES_REPORT.md",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/PERSISTENT_ISSUES_REPORT.md"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Scripts/validate_privacy_keys.sh",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Scripts/validate_privacy_keys.sh"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/APIKeyManager.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/APIKeyManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/AudioManager.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/AudioManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/AuthenticationManager.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/AuthenticationManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/BiometricAuthManager.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/BiometricAuthManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/CameraManager.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/CameraManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/ConversationService.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/ConversationService.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/CurriculumEngine.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/CurriculumEngine.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/ElevenLabsService.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/ElevenLabsService.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/ImageDatasetManager.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/ImageDatasetManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/ImageGenerationService.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/ImageGenerationService.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/OpenAIService.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/OpenAIService.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/SiriKitManager.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/SiriKitManager.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Services/UserMonitoringService.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Services/UserMonitoringService.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/AdminDashboardView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/AdminDashboardView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/APIKeyConfigurationView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/APIKeyConfigurationView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/AuthenticationView 2.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/AuthenticationView%202.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/AuthenticationView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/AuthenticationView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/CameraUI.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/CameraUI.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/Components/AuraBackground.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/Components/AuraBackground.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/Components/GlassButton.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/Components/GlassButton.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/Components/GlassCard.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/Components/GlassCard.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/ContentView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/ContentView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/ConversationPracticeView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/ConversationPracticeView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/FacePipeline.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/FacePipeline.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/GameView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/GameView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/MimicryView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/MimicryView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/PlayerProgressView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/PlayerProgressView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/SessionView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/SessionView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/TherapyLLM.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/TherapyLLM.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/VisionTrainingView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/VisionTrainingView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/VocabularyView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/VocabularyView.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/VocabularyWithSpeechView 2.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/VocabularyWithSpeechView%202.swift"
+    },
+    {
+      "scope": "legacy",
+      "path": "legacy/swift-ios/Views/VocabularyWithSpeechView.swift",
+      "responsibility": "Archived Swift iOS implementation and historical project artifacts.",
+      "exports": [],
+      "sourceLink": "https://github.com/EGIntegrations/AURA-mobile/blob/main/legacy/swift-ios/Views/VocabularyWithSpeechView.swift"
+    }
+  ]
+}

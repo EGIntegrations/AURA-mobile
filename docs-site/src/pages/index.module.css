@@ -1,0 +1,93 @@
+.hero {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(126, 208, 255, 0.35), transparent 38%),
+    radial-gradient(circle at 85% 10%, rgba(163, 123, 255, 0.28), transparent 34%),
+    linear-gradient(145deg, #0b0f1a 0%, #12183b 48%, #1b1f46 100%);
+  padding: 6rem 1.5rem 4rem;
+}
+
+.heroInner {
+  margin: 0 auto;
+  max-width: 920px;
+}
+
+.kicker {
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b6dfff;
+  margin: 0;
+}
+
+.title {
+  margin: 0.6rem 0 0;
+  font-size: clamp(2.2rem, 4.6vw, 4.2rem);
+  line-height: 1.02;
+  color: #ffffff;
+}
+
+.subtitle {
+  margin: 1rem 0 0;
+  max-width: 720px;
+  font-size: 1.06rem;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.ctaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1.6rem;
+}
+
+.main {
+  padding: 2rem 1.2rem 4rem;
+}
+
+.sectionGrid {
+  max-width: 1080px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  border-radius: 14px;
+  border: 1px solid rgba(123, 171, 255, 0.34);
+  background: linear-gradient(165deg, rgba(20, 24, 45, 0.78), rgba(14, 20, 38, 0.84));
+  color: #f3f7ff;
+  text-decoration: none;
+  padding: 1rem;
+  min-height: 160px;
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.card:hover {
+  text-decoration: none;
+  color: #ffffff;
+  border-color: rgba(126, 208, 255, 0.64);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(12, 20, 40, 0.42);
+}
+
+.card h2 {
+  font-size: 1.04rem;
+  margin: 0;
+}
+
+.card p {
+  margin: 0.7rem 0 0;
+  font-size: 0.9rem;
+  color: rgba(239, 245, 255, 0.85);
+}
+
+@media (max-width: 700px) {
+  .hero {
+    padding-top: 4.6rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+}

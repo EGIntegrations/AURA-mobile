@@ -1,0 +1,62 @@
+:root {
+  --ifm-color-primary: #5b7cff;
+  --ifm-color-primary-dark: #4869ea;
+  --ifm-color-primary-darker: #3f5fd6;
+  --ifm-color-primary-darkest: #304ab0;
+  --ifm-color-primary-light: #7290ff;
+  --ifm-color-primary-lighter: #86a1ff;
+  --ifm-color-primary-lightest: #a8bbff;
+  --ifm-background-color: #090d16;
+  --ifm-background-surface-color: #131a30;
+  --ifm-navbar-background-color: rgba(11, 15, 26, 0.92);
+  --ifm-footer-background-color: #070b13;
+  --ifm-font-color-base: #e8efff;
+  --ifm-heading-color: #ffffff;
+  --ifm-link-color: #7ed0ff;
+  --ifm-code-font-size: 92%;
+  --ifm-card-background-color: rgba(20, 27, 49, 0.9);
+  --ifm-table-border-color: rgba(126, 208, 255, 0.24);
+  --ifm-toc-border-color: rgba(126, 208, 255, 0.24);
+  --ifm-menu-color: #d7e6ff;
+  --ifm-menu-color-active: #ffffff;
+  --ifm-menu-color-background-active: rgba(91, 124, 255, 0.18);
+}
+
+[data-theme='light'] {
+  --ifm-background-color: #f7f9ff;
+  --ifm-background-surface-color: #ffffff;
+  --ifm-navbar-background-color: rgba(255, 255, 255, 0.94);
+  --ifm-footer-background-color: #eef3ff;
+  --ifm-font-color-base: #162037;
+  --ifm-heading-color: #0f1730;
+  --ifm-menu-color: #203054;
+}
+
+.navbar {
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(126, 208, 255, 0.2);
+}
+
+.footer {
+  border-top: 1px solid rgba(126, 208, 255, 0.18);
+}
+
+.theme-doc-sidebar-container {
+  border-right: 1px solid rgba(126, 208, 255, 0.18);
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  letter-spacing: 0.02em;
+}
+
+.markdown table {
+  display: table;
+  width: 100%;
+}
+
+.markdown a {
+  text-decoration-thickness: 1px;
+}
