@@ -9,7 +9,7 @@ import { Logger } from './Logger';
 
 const USERS_KEY = 'aura_users';
 const CURRENT_USER_KEY = 'aura_current_user';
-const USER_CREDENTIALS_PREFIX = 'aura_user_credentials_v1:';
+const USER_CREDENTIALS_PREFIX = 'aura_user_credentials_v1_';
 const PASSWORD_HASH_VERSION = 'v2';
 const PASSWORD_HASH_ITERATIONS = 12000;
 const SECURE_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
@@ -500,8 +500,9 @@ export class AuthenticationService {
   }
 
   private static async getCredentials(userId: string): Promise<{ passwordHash: string; passwordSalt: string } | null> {
+    const credentialKey = this.getCredentialStoreKey(userId);
     const serialized = await SecureStore.getItemAsync(
-      `${USER_CREDENTIALS_PREFIX}${userId}`,
+      credentialKey,
       SECURE_STORE_OPTIONS
     );
     if (!serialized) return null;
@@ -520,14 +521,20 @@ export class AuthenticationService {
 
   private static async persistCredentials(user: User): Promise<void> {
     if (!user.passwordHash || !user.passwordSalt) return;
+    const credentialKey = this.getCredentialStoreKey(user.id);
     await SecureStore.setItemAsync(
-      `${USER_CREDENTIALS_PREFIX}${user.id}`,
+      credentialKey,
       JSON.stringify({
         passwordHash: user.passwordHash,
         passwordSalt: user.passwordSalt,
       }),
       SECURE_STORE_OPTIONS
     );
+  }
+
+  private static getCredentialStoreKey(userId: string): string {
+    const safeUserId = userId.replace(/[^A-Za-z0-9._-]/g, '_');
+    return `${USER_CREDENTIALS_PREFIX}${safeUserId}`;
   }
 
   private static async hydrateCredentials(user: User): Promise<User> {
