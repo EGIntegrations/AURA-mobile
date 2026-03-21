@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import {
   useSpeechRecognitionEvent,
@@ -34,6 +35,7 @@ import { AURA_FONTS } from '../theme/typography';
 
 export default function ConversationScreen({ navigation }: any) {
   const { currentUser, updateUserProgress } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [selectedScenario, setSelectedScenario] = useState<ConversationScenario | null>(null);
   const [modePickerScenario, setModePickerScenario] = useState<ConversationScenario | null>(null);
   const [conversationMode, setConversationMode] = useState<'text' | 'talk'>('text');
@@ -216,7 +218,7 @@ export default function ConversationScreen({ navigation }: any) {
       <View style={styles.container}>
         <AuraBackground />
 
-        <View style={styles.scenarioSelectionContainer}>
+        <View style={[styles.scenarioSelectionContainer, { paddingTop: insets.top + 12 }]}>
           <View style={styles.scenarioHeader}>
             <LiquidGlassHeader
               title="Choose a Scenario"
@@ -302,7 +304,12 @@ export default function ConversationScreen({ navigation }: any) {
     >
       <AuraBackground />
 
-      <View style={styles.conversationContainer}>
+      <View
+        style={[
+          styles.conversationContainer,
+          { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 8 },
+        ]}
+      >
         {/* Header */}
         <View style={styles.conversationHeader}>
           <TouchableOpacity onPress={handleEndConversation}>
@@ -429,7 +436,7 @@ const styles = StyleSheet.create({
   },
   scenarioSelectionContainer: {
     flex: 1,
-    paddingTop: 80,
+    paddingTop: 16,
   },
   modeOverlay: {
     flex: 1,
@@ -526,7 +533,8 @@ const styles = StyleSheet.create({
   },
   conversationContainer: {
     flex: 1,
-    paddingTop: 60,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   conversationHeader: {
     flexDirection: 'row',

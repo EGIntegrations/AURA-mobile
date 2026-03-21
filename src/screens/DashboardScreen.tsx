@@ -11,6 +11,7 @@ import {
 import { useAuthStore } from '../store/authStore';
 import { UserRole } from '../types';
 import { BackendClient } from '../services/BackendClient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -19,6 +20,7 @@ import { AURA_FONTS } from '../theme/typography';
 
 export default function DashboardScreen({ navigation }: any) {
   const { currentUser, signOut } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [showEmotionPracticeMenu, setShowEmotionPracticeMenu] = useState(false);
 
   if (!currentUser) return null;
@@ -58,7 +60,10 @@ export default function DashboardScreen({ navigation }: any) {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
@@ -281,8 +286,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   content: {
     paddingHorizontal: 24,

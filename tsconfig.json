@@ -15,7 +15,8 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx"
+    "App.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ]
 }

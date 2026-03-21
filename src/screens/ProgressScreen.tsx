@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
@@ -15,6 +16,7 @@ import { AURA_FONTS } from '../theme/typography';
 
 export default function ProgressScreen({ navigation }: any) {
   const { currentUser } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   if (!currentUser) return null;
 
@@ -36,7 +38,13 @@ export default function ProgressScreen({ navigation }: any) {
     <View style={styles.container}>
       <AuraBackground />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.content}>
           {/* Header */}
           <LiquidGlassHeader
@@ -179,8 +187,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   content: {
     paddingHorizontal: 24,
@@ -236,7 +244,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   statCard: {
-    width: '31%',
+    width: '48%',
     padding: 16,
     alignItems: 'center',
   },

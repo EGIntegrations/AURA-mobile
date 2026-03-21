@@ -7,6 +7,7 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Audio } from 'expo-av';
 import {
   useSpeechRecognitionEvent,
@@ -27,6 +28,7 @@ interface CommandDefinition {
 }
 
 export default function VoiceCommandScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [lastCommand, setLastCommand] = useState('');
@@ -128,7 +130,13 @@ export default function VoiceCommandScreen({ navigation }: any) {
     <View style={styles.container}>
       <AuraBackground />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <LiquidGlassHeader
           title="Voice Commands"
           onBack={() => navigation.goBack()}
@@ -188,8 +196,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 24,
     paddingHorizontal: 24,
     gap: 20,
   },

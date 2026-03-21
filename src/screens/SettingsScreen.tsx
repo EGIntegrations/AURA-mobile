@@ -5,7 +5,9 @@ import {
   StyleSheet,
   Switch,
   Alert,
+  ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
 import GlassCard from '../components/GlassCard';
@@ -18,6 +20,7 @@ import { AURA_FONTS } from '../theme/typography';
 
 export default function SettingsScreen({ navigation }: any) {
   const { currentUser } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState('Biometric Login');
@@ -81,7 +84,13 @@ export default function SettingsScreen({ navigation }: any) {
     <View style={styles.container}>
       <AuraBackground />
 
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <LiquidGlassHeader
           title="Settings"
           onBack={() => navigation.goBack()}
@@ -149,7 +158,7 @@ export default function SettingsScreen({ navigation }: any) {
             />
           </View>
         </GlassCard>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -159,8 +168,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    flex: 1,
-    paddingTop: 60,
+    flexGrow: 1,
+    paddingTop: 16,
+    paddingBottom: 24,
     paddingHorizontal: 24,
     gap: 20,
   },

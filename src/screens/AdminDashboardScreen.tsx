@@ -10,6 +10,7 @@ import {
   TextInput,
   Share,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { AuthenticationService } from '../services/AuthenticationService';
 import { BackendClient } from '../services/BackendClient';
@@ -25,6 +26,7 @@ type TabType = 'overview' | 'learners' | 'progress' | 'settings';
 
 export default function AdminDashboardScreen({ navigation }: any) {
   const { currentUser } = useAuthStore();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState('');
@@ -131,7 +133,7 @@ ${supervisedUsers.map((user) => `- ${user.displayName} (Level ${user.progress.cu
     <View style={styles.container}>
       <AuraBackground />
 
-      <View style={styles.content}>
+      <View style={[styles.content, { paddingTop: insets.top + 8 }]}>
         {/* Header */}
         <LiquidGlassHeader
           title="Admin Dashboard"
@@ -170,7 +172,10 @@ ${supervisedUsers.map((user) => `- ${user.displayName} (Level ${user.progress.cu
         {/* Tab Content */}
         <ScrollView
           style={styles.tabContent}
-          contentContainerStyle={styles.tabContentScroll}
+          contentContainerStyle={[
+            styles.tabContentScroll,
+            { paddingBottom: insets.bottom + 20 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {activeTab === 'overview' && (
@@ -459,7 +464,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingTop: 60,
+    paddingTop: 16,
   },
   headerCard: {
     marginHorizontal: 24,
@@ -497,7 +502,7 @@ const styles = StyleSheet.create({
   },
   tabContentScroll: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   tabPanel: {
     gap: 16,

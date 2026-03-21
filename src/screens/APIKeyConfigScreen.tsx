@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { APIKeyService } from '../services/APIKeyService';
 import { BackendClient } from '../services/BackendClient';
 import AuraBackground from '../components/AuraBackground';
@@ -18,6 +19,7 @@ import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 
 export default function APIKeyConfigScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const backendEnabled = BackendClient.isConfigured();
   const [openAIKey, setOpenAIKey] = useState('');
   const [elevenLabsKey, setElevenLabsKey] = useState('');
@@ -105,7 +107,13 @@ export default function APIKeyConfigScreen({ navigation }: any) {
     <View style={styles.container}>
       <AuraBackground />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.content}>
           {/* Header */}
           <LiquidGlassHeader
@@ -260,8 +268,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   content: {
     paddingHorizontal: 24,
