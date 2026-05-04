@@ -37,8 +37,9 @@ export interface Permission {
 export interface UserSettings {
   notificationsEnabled: boolean;
   soundEnabled: boolean;
-  preferredVoice: string;
   theme: 'light' | 'dark';
+  age: number;
+  specialInterests: string[];
 }
 
 // Re-export PlayerProgress from Game types

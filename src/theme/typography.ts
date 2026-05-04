@@ -1,10 +1,10 @@
 import { Platform } from 'react-native';
 
 export const AURA_FONTS = {
-  pixel: Platform.select({
-    ios: 'Menlo',
-    android: 'monospace',
-    default: 'monospace',
+  rounded: Platform.select({
+    ios: 'System', // SF Rounded on iOS
+    android: 'sans-serif',
+    default: 'System',
   }),
   body: Platform.select({
     ios: 'System',
@@ -14,13 +14,13 @@ export const AURA_FONTS = {
 };
 
 export const AURA_TEXT = {
-  pixelHeading: {
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.6,
+  heading: {
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.5,
   },
-  pixelLabel: {
-    fontFamily: AURA_FONTS.pixel,
-    letterSpacing: 0.4,
+  title: {
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.3,
   },
   body: {
     fontFamily: AURA_FONTS.body,

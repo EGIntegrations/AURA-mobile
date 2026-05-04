@@ -12,8 +12,10 @@ export const AURA_COLORS = {
   danger: '#F87171',
   dangerDark: '#EF4444',
   glass: {
-    base: 'rgba(16, 19, 38, 0.6)',
-    border: 'rgba(91, 124, 255, 0.38)',
+    base: 'rgba(255, 255, 255, 0.08)',
+    borderLight: 'rgba(255, 255, 255, 0.20)',
+    borderTint: 'rgba(91, 124, 255, 0.30)',
+    highlight: 'rgba(255, 255, 255, 0.15)',
     overlay: 'rgba(255, 255, 255, 0.04)',
   },
   gradients: {
