@@ -1,38 +1,91 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
 import LiquidGlassCard from '../components/LiquidGlassCard';
-import { ALL_EMOTIONS, type GameSession } from '../types';
-import { AURA_COLORS } from '../theme/colors';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 
+// Placeholder stats until taskStore exposes historical aggregates
+const PLACEHOLDER_STATS = {
+  tasksCompleted: 12,
+  wordsLearned: 34,
+  streak: 5,
+  overallCompletion: 0.42,
+  weeklyTasks: [2, 0, 3, 1, 4, 2, 3], // Mon-Sun
+};
+
+const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+const BADGES = [
+  { emoji: '🌟', label: 'First Task' },
+  { emoji: '📚', label: 'Word Wizard' },
+  { emoji: '🔥', label: 'Week Streak' },
+  { emoji: '🎯', label: 'Sharp Eye' },
+  { emoji: '🏆', label: 'Top Score' },
+  { emoji: '💎', label: 'Collector' },
+];
+
+function ProgressRing({
+  size,
+  strokeWidth,
+  progress,
+  color,
+}: {
+  size: number;
+  strokeWidth: number;
+  progress: number;
+  color: string;
+}) {
+  return (
+    <View style={{ width: size, height: size }}>
+      <View style={[styles.ringContainer, { width: size, height: size }]}>
+        {/* Background circle */}
+        <View
+          style={[
+            styles.ringTrack,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: strokeWidth,
+              borderColor: 'rgba(255,255,255,0.15)',
+            },
+          ]}
+        />
+        {/* Progress arc using a clipped half-circle trick would be complex;
+            instead use a simple pie-segment approach with rotation */}
+        <View
+          style={[
+            styles.ringProgress,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: strokeWidth,
+              borderColor: color,
+              borderTopColor: color,
+              borderRightColor: progress > 0.5 ? color : 'transparent',
+              borderBottomColor: progress > 0.5 ? color : 'transparent',
+              borderLeftColor: 'transparent',
+              transform: [{ rotate: `${-90 + progress * 360}deg` }],
+              opacity: progress > 0 ? 1 : 0,
+            },
+          ]}
+        />
+      </View>
+      <View style={styles.ringLabelContainer}>
+        <Text style={styles.ringPercent}>{Math.round(progress * 100)}%</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function ProgressScreen({ navigation }: any) {
-  const { currentUser } = useAuthStore();
   const insets = useSafeAreaInsets();
-
-  if (!currentUser) return null;
-
-  const { progress } = currentUser;
-  const xpForNextLevel = progress.currentLevel * 1000;
-  const xpProgress = progress.totalScore % 1000;
-  const levelProgress = xpProgress / 1000;
-
-  const getStreakMedal = () => {
-    if (progress.bestStreak >= 20) return { emoji: '💎', name: 'Platinum', color: '#e0e7ff' };
-    if (progress.bestStreak >= 10) return { emoji: '🥇', name: 'Gold', color: '#fbbf24' };
-    if (progress.bestStreak >= 5) return { emoji: '🥈', name: 'Silver', color: '#d1d5db' };
-    return { emoji: '🥉', name: 'Bronze', color: '#d97706' };
-  };
-
-  const medal = getStreakMedal();
+  const stats = PLACEHOLDER_STATS;
+  const maxWeekly = Math.max(1, ...stats.weeklyTasks);
 
   return (
     <View style={styles.container}>
@@ -46,134 +99,81 @@ export default function ProgressScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          {/* Header */}
           <LiquidGlassHeader
             title="My Progress"
             onBackPress={() => navigation.goBack()}
             style={styles.headerCard}
           />
 
-          {/* Level Card */}
+          {/* Progress Ring */}
           <LiquidGlassCard cornerRadius={30}>
-            <View style={styles.levelCard}>
-              <Text style={styles.levelNumber}>{progress.currentLevel}</Text>
-              <Text style={styles.levelLabel}>Current Level</Text>
-              <View style={styles.levelProgressBar}>
-                <View style={[styles.levelProgressFill, { width: `${levelProgress * 100}%` }]} />
-              </View>
-              <Text style={styles.levelProgressText}>
-                {xpProgress} / {xpForNextLevel} XP to Level {progress.currentLevel + 1}
-              </Text>
-              <Text style={styles.totalXp}>Total XP: {progress.totalScore}</Text>
+            <View style={styles.ringCard}>
+              <ProgressRing
+                size={160}
+                strokeWidth={14}
+                progress={stats.overallCompletion}
+                color={AURA_COLORS.accent}
+              />
+              <Text style={styles.ringSubtitle}>Overall Completion</Text>
             </View>
           </LiquidGlassCard>
 
-          {/* Stats Grid */}
-          <View style={styles.statsGrid}>
-            <LiquidGlassCard style={styles.statCard}>
-              <Text style={styles.statValue}>{progress.totalSessions}</Text>
-              <Text style={styles.statLabel}>Sessions</Text>
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <LiquidGlassCard style={styles.statCard} padding={16}>
+              <Text style={styles.statValue}>{stats.tasksCompleted}</Text>
+              <Text style={styles.statLabel}>Tasks Done</Text>
             </LiquidGlassCard>
-            <LiquidGlassCard style={styles.statCard}>
-              <Text style={styles.statValue}>{Math.round(progress.overallAccuracy * 100)}%</Text>
-              <Text style={styles.statLabel}>Accuracy</Text>
+            <LiquidGlassCard style={styles.statCard} padding={16}>
+              <Text style={styles.statValue}>{stats.wordsLearned}</Text>
+              <Text style={styles.statLabel}>Words Learned</Text>
             </LiquidGlassCard>
-            <LiquidGlassCard style={styles.statCard}>
-              <Text style={styles.statValue}>{progress.bestStreak}</Text>
-              <Text style={styles.statLabel}>Best Streak</Text>
-            </LiquidGlassCard>
-            <LiquidGlassCard style={styles.statCard}>
-              <Text style={styles.statValue}>{progress.speechPracticeHistory.length}</Text>
-              <Text style={styles.statLabel}>Speech</Text>
-            </LiquidGlassCard>
-            <LiquidGlassCard style={styles.statCard}>
-              <Text style={styles.statValue}>{progress.conversationHistory.length}</Text>
-              <Text style={styles.statLabel}>Conversations</Text>
-            </LiquidGlassCard>
-            <LiquidGlassCard style={styles.statCard}>
-              <Text style={styles.statValue}>{progress.mimicryHistory.length}</Text>
-              <Text style={styles.statLabel}>Mimicry</Text>
+            <LiquidGlassCard style={styles.statCard} padding={16}>
+              <Text style={styles.statValue}>
+                🔥{stats.streak}
+              </Text>
+              <Text style={styles.statLabel}>Day Streak</Text>
             </LiquidGlassCard>
           </View>
 
-          {/* Streak Medal */}
+          {/* Weekly Bar Chart */}
           <LiquidGlassCard cornerRadius={24}>
-            <View style={styles.medalSection}>
-              <Text style={styles.sectionTitle}>Streak Medal</Text>
-              <View style={styles.medalDisplay}>
-                <Text style={styles.medalEmoji}>{medal.emoji}</Text>
-                <Text style={[styles.medalName, { color: medal.color }]}>{medal.name}</Text>
-                <Text style={styles.medalDescription}>
-                  Best streak: {progress.bestStreak} correct in a row
-                </Text>
+            <View style={styles.chartSection}>
+              <Text style={styles.sectionTitle}>This Week</Text>
+              <View style={styles.barsRow}>
+                {stats.weeklyTasks.map((count, index) => (
+                  <View key={index} style={styles.barColumn}>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          {
+                            height: `${(count / maxWeekly) * 100}%`,
+                            backgroundColor: AURA_COLORS.accent,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.barLabel}>{WEEK_DAYS[index]}</Text>
+                    <Text style={styles.barValue}>{count}</Text>
+                  </View>
+                ))}
               </View>
             </View>
           </LiquidGlassCard>
 
-          {/* Emotion Mastery */}
+          {/* Badges */}
           <LiquidGlassCard cornerRadius={24}>
-            <View style={styles.emotionSection}>
-              <Text style={styles.sectionTitle}>Emotion Mastery</Text>
-              <View style={styles.emotionGrid}>
-                {ALL_EMOTIONS.map((emotion) => {
-                  const isUnlocked = progress.unlockedEmotions.includes(emotion.name);
-                  return (
-                    <View key={emotion.id} style={styles.emotionCard}>
-                      <Text style={[styles.emotionEmoji, !isUnlocked && styles.emotionLocked]}>
-                        {emotion.emoji}
-                      </Text>
-                      <Text style={styles.emotionName}>{emotion.name}</Text>
-                      <Text style={styles.emotionStatus}>
-                        {isUnlocked ? '✓ Unlocked' : '🔒 Locked'}
-                      </Text>
-                    </View>
-                  );
-                })}
+            <View style={styles.badgesSection}>
+              <Text style={styles.sectionTitle}>Badges</Text>
+              <View style={styles.badgesGrid}>
+                {BADGES.map((badge, index) => (
+                  <View key={index} style={styles.badgeItem}>
+                    <Text style={styles.badgeEmoji}>{badge.emoji}</Text>
+                    <Text style={styles.badgeLabel}>{badge.label}</Text>
+                  </View>
+                ))}
               </View>
-            </View>
-          </LiquidGlassCard>
-
-          {/* Achievements */}
-          <LiquidGlassCard cornerRadius={24}>
-            <View style={styles.achievementsSection}>
-              <Text style={styles.sectionTitle}>Achievements</Text>
-              {progress.achievementsUnlocked.length > 0 ? (
-                <View style={styles.achievementsGrid}>
-                  {progress.achievementsUnlocked.map((achievement: string) => (
-                    <View key={achievement} style={styles.achievementChip}>
-                      <Text style={styles.achievementText}>{achievement}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.emptyText}>Complete sessions to unlock achievements.</Text>
-              )}
-            </View>
-          </LiquidGlassCard>
-
-          {/* Recent Sessions */}
-          <LiquidGlassCard cornerRadius={24}>
-            <View style={styles.sessionsSection}>
-              <Text style={styles.sectionTitle}>Recent Sessions</Text>
-              {progress.sessionHistory.slice(0, 4).map((session: GameSession) => (
-                <View key={session.id} style={styles.sessionRow}>
-                  <View>
-                    <Text style={styles.sessionScore}>Score: {session.score}</Text>
-                    <Text style={styles.sessionDate}>
-                      {new Date(session.startTime).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <View style={styles.sessionStats}>
-                    <Text style={styles.sessionStat}>
-                      {Math.round(session.accuracy * 100)}% accuracy
-                    </Text>
-                    <Text style={styles.sessionStat}>Streak: {session.maxStreak}</Text>
-                  </View>
-                </View>
-              ))}
-              {progress.sessionHistory.length === 0 && (
-                <Text style={styles.emptyText}>No sessions yet. Start playing to see your progress!</Text>
-              )}
             </View>
           </LiquidGlassCard>
         </View>
@@ -197,59 +197,54 @@ const styles = StyleSheet.create({
   headerCard: {
     marginBottom: 8,
   },
-  levelCard: {
+  ringCard: {
     alignItems: 'center',
     gap: 12,
   },
-  levelNumber: {
-    fontSize: 72,
+  ringContainer: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ringTrack: {
+    position: 'absolute',
+  },
+  ringProgress: {
+    position: 'absolute',
+  },
+  ringLabelContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ringPercent: {
+    fontSize: 36,
     fontWeight: 'bold',
     color: 'white',
     fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 1.2,
+    letterSpacing: 0.6,
   },
-  levelLabel: {
-    fontSize: 18,
+  ringSubtitle: {
+    fontSize: 16,
     color: 'rgba(255, 255, 255, 0.85)',
     fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
   },
-  levelProgressBar: {
-    width: '100%',
-    height: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 6,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  levelProgressFill: {
-    height: '100%',
-    backgroundColor: AURA_COLORS.primary,
-  },
-  levelProgressText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.3,
-  },
-  totalXp: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.2,
-  },
-  statsGrid: {
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 12,
   },
   statCard: {
-    width: '48%',
-    padding: 16,
+    flex: 1,
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 4,
@@ -262,7 +257,7 @@ const styles = StyleSheet.create({
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
-  medalSection: {
+  chartSection: {
     gap: 16,
   },
   sectionTitle: {
@@ -272,123 +267,70 @@ const styles = StyleSheet.create({
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.5,
   },
-  medalDisplay: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  medalEmoji: {
-    fontSize: 64,
-  },
-  medalName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.6,
-  },
-  medalDescription: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.2,
-  },
-  emotionSection: {
-    gap: 16,
-  },
-  emotionGrid: {
+  barsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  achievementsSection: {
-    gap: 12,
-  },
-  achievementsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 120,
     gap: 8,
   },
-  achievementChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    backgroundColor: AURA_COLORS.accentSoft,
-    borderWidth: 1,
-    borderColor: AURA_COLORS.accent,
-  },
-  achievementText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.2,
-  },
-  emotionCard: {
-    width: '47%',
-    padding: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
+  barColumn: {
+    flex: 1,
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
-  emotionEmoji: {
-    fontSize: 40,
+  barTrack: {
+    width: '100%',
+    height: 80,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
   },
-  emotionLocked: {
-    opacity: 0.3,
+  barFill: {
+    width: '100%',
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    minHeight: 4,
   },
-  emotionName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.3,
-  },
-  emotionStatus: {
+  barLabel: {
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
-  sessionsSection: {
-    gap: 16,
-  },
-  sessionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  sessionScore: {
-    fontSize: 16,
+  barValue: {
+    fontSize: 11,
     fontWeight: '600',
     color: 'white',
     fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.3,
-  },
-  sessionDate: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.6)',
-    marginTop: 4,
-    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
-  sessionStats: {
-    alignItems: 'flex-end',
+  badgesSection: {
+    gap: 16,
   },
-  sessionStat: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
+  badgesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  badgeItem: {
+    width: '30%',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 14,
+  },
+  badgeEmoji: {
+    fontSize: 28,
+  },
+  badgeLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.85)',
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
-    paddingVertical: 20,
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.2,
   },
 });
