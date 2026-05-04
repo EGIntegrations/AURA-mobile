@@ -17,7 +17,7 @@ import { BackendClient } from '../services/BackendClient';
 import { UserRole } from '../types';
 import AuraBackground from '../components/AuraBackground';
 import LiquidGlassCard from '../components/LiquidGlassCard';
-import GlassButton from '../components/GlassButton';
+import LiquidGlassButton from '../components/LiquidGlassButton';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 
@@ -28,11 +28,9 @@ export default function AuthenticationScreen() {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
   const [showBiometric, setShowBiometric] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState('Biometric');
   const showDemoLogins = __DEV__;
-  const roleOptions = __DEV__ ? Object.values(UserRole) : [UserRole.STUDENT];
   const localAuthAllowed = AuthenticationService.isOfflineAuthEnabled();
   const requiresBackend = !localAuthAllowed && !BackendClient.isConfigured();
   const offlineMode = localAuthAllowed && !BackendClient.isConfigured();
@@ -64,7 +62,7 @@ export default function AuthenticationScreen() {
 
     if (isSignUp) {
       if (!email || !displayName) return;
-      await signUp(username.trim(), email.trim(), displayName.trim(), role, password);
+      await signUp(username.trim(), email.trim(), displayName.trim(), UserRole.STUDENT, password);
     } else {
       await signIn(username.trim(), password);
     }
@@ -116,139 +114,118 @@ export default function AuthenticationScreen() {
                 pointerEvents="none"
               />
               <LiquidGlassCard style={styles.card}>
-              <View style={styles.segmentControl}>
-                <TouchableOpacity
-                  onPress={() => setIsSignUp(false)}
-                  style={styles.segmentButton}
-                >
-                  <Text
-                    style={[
-                      styles.segment,
-                      !isSignUp && styles.segmentActive,
-                    ]}
+                <View style={styles.segmentControl}>
+                  <TouchableOpacity
+                    onPress={() => setIsSignUp(false)}
+                    style={styles.segmentButton}
                   >
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setIsSignUp(true)}
-                  style={styles.segmentButton}
-                >
-                  <Text
-                    style={[
-                      styles.segment,
-                      isSignUp && styles.segmentActive,
-                    ]}
+                    <Text
+                      style={[
+                        styles.segment,
+                        !isSignUp && styles.segmentActive,
+                      ]}
+                    >
+                      Sign In
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setIsSignUp(true)}
+                    style={styles.segmentButton}
                   >
-                    Sign Up
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    <Text
+                      style={[
+                        styles.segment,
+                        isSignUp && styles.segmentActive,
+                      ]}
+                    >
+                      Sign Up
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Username"
-                placeholderTextColor="#888"
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-
-              {isSignUp && (
-                <>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Email"
-                    placeholderTextColor="#888"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Display Name"
-                    placeholderTextColor="#888"
-                    value={displayName}
-                    onChangeText={setDisplayName}
-                  />
-                  <View style={styles.roleRow}>
-                    {roleOptions.map((userRole) => (
-                      <TouchableOpacity
-                        key={userRole}
-                        style={[
-                          styles.roleChip,
-                          role === userRole && styles.roleChipActive,
-                        ]}
-                        onPress={() => setRole(userRole)}
-                      >
-                        <Text
-                          style={[
-                            styles.roleChipText,
-                            role === userRole && styles.roleChipTextActive,
-                          ]}
-                        >
-                          {userRole}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
-              )}
-
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#888"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
-
-              <GlassButton
-                title={
-                  isLoading
-                    ? 'Loading...'
-                    : isSignUp
-                    ? 'Create Account'
-                    : 'Sign In'
-                }
-                onPress={handleSubmit}
-                disabled={isLoading}
-                customStyle={styles.signInButton}
-              />
-
-              {showBiometric && !isSignUp && (
-                <GlassButton
-                  title={`Sign in with ${biometricLabel}`}
-                  onPress={signInWithBiometric}
-                  disabled={isLoading}
-                  style="secondary"
-                  customStyle={styles.biometricButton}
+                <TextInput
+                  style={styles.input}
+                  placeholder="Username"
+                  placeholderTextColor="#888"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
-              )}
 
-              {error && <Text style={styles.error}>{error}</Text>}
-              {requiresBackend && (
-                <Text style={styles.error}>
-                  Production sign-in requires a configured secure backend URL.
-                </Text>
-              )}
-              {offlineMode && (
-                <Text style={styles.offlineNotice}>
-                  Offline auth mode is active. Configure a secure backend URL when available.
-                </Text>
-              )}
+                {isSignUp && (
+                  <>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Email"
+                      placeholderTextColor="#888"
+                      value={email}
+                      onChangeText={setEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Display Name"
+                      placeholderTextColor="#888"
+                      value={displayName}
+                      onChangeText={setDisplayName}
+                    />
+                  </>
+                )}
+
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#888"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+
+                <LiquidGlassButton
+                  title={
+                    isLoading
+                      ? 'Loading...'
+                      : isSignUp
+                      ? 'Create Account'
+                      : 'Sign In'
+                  }
+                  onPress={handleSubmit}
+                  disabled={isLoading}
+                  style={styles.signInButton}
+                />
+
+                {showBiometric && !isSignUp && (
+                  <LiquidGlassButton
+                    title={`Sign in with ${biometricLabel}`}
+                    onPress={signInWithBiometric}
+                    disabled={isLoading}
+                    variant="secondary"
+                    style={styles.biometricButton}
+                  />
+                )}
+
+                {error && <Text style={styles.error}>{error}</Text>}
+                {requiresBackend && (
+                  <Text style={styles.error}>
+                    Production sign-in requires a configured secure backend URL.
+                  </Text>
+                )}
+                {offlineMode && (
+                  <Text style={styles.offlineNotice}>
+                    Offline auth mode is active. Configure a secure backend URL when available.
+                  </Text>
+                )}
               </LiquidGlassCard>
             </View>
 
             {showDemoLogins && (
               <View style={styles.demoContainer}>
-                <Text style={styles.demoLabel}>Quick demo logins</Text>
+                <Text style={styles.demoLabel}>Quick demo login</Text>
                 <View style={styles.demoChips}>
-                  {['teacher1', 'parent1', 'student1'].map((user) => (
+                  {['student1'].map((user) => (
                     <TouchableOpacity
                       key={user}
                       style={styles.demoChip}
@@ -385,32 +362,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
-  },
-  roleRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  roleChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  roleChipActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
-  },
-  roleChipText: {
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 12,
-    textTransform: 'capitalize',
-    fontWeight: '600',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.2,
-  },
-  roleChipTextActive: {
-    color: 'white',
   },
   demoContainer: {
     marginTop: 24,
