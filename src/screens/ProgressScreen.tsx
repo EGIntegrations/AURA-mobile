@@ -8,7 +8,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
-import GlassCard from '../components/GlassCard';
+import LiquidGlassCard from '../components/LiquidGlassCard';
 import { ALL_EMOTIONS, type GameSession } from '../types';
 import { AURA_COLORS } from '../theme/colors';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
@@ -54,7 +54,7 @@ export default function ProgressScreen({ navigation }: any) {
           />
 
           {/* Level Card */}
-          <GlassCard cornerRadius={30}>
+          <LiquidGlassCard cornerRadius={30}>
             <View style={styles.levelCard}>
               <Text style={styles.levelNumber}>{progress.currentLevel}</Text>
               <Text style={styles.levelLabel}>Current Level</Text>
@@ -66,38 +66,38 @@ export default function ProgressScreen({ navigation }: any) {
               </Text>
               <Text style={styles.totalXp}>Total XP: {progress.totalScore}</Text>
             </View>
-          </GlassCard>
+          </LiquidGlassCard>
 
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
-            <GlassCard style={styles.statCard}>
+            <LiquidGlassCard style={styles.statCard}>
               <Text style={styles.statValue}>{progress.totalSessions}</Text>
               <Text style={styles.statLabel}>Sessions</Text>
-            </GlassCard>
-            <GlassCard style={styles.statCard}>
+            </LiquidGlassCard>
+            <LiquidGlassCard style={styles.statCard}>
               <Text style={styles.statValue}>{Math.round(progress.overallAccuracy * 100)}%</Text>
               <Text style={styles.statLabel}>Accuracy</Text>
-            </GlassCard>
-            <GlassCard style={styles.statCard}>
+            </LiquidGlassCard>
+            <LiquidGlassCard style={styles.statCard}>
               <Text style={styles.statValue}>{progress.bestStreak}</Text>
               <Text style={styles.statLabel}>Best Streak</Text>
-            </GlassCard>
-            <GlassCard style={styles.statCard}>
+            </LiquidGlassCard>
+            <LiquidGlassCard style={styles.statCard}>
               <Text style={styles.statValue}>{progress.speechPracticeHistory.length}</Text>
               <Text style={styles.statLabel}>Speech</Text>
-            </GlassCard>
-            <GlassCard style={styles.statCard}>
+            </LiquidGlassCard>
+            <LiquidGlassCard style={styles.statCard}>
               <Text style={styles.statValue}>{progress.conversationHistory.length}</Text>
               <Text style={styles.statLabel}>Conversations</Text>
-            </GlassCard>
-            <GlassCard style={styles.statCard}>
+            </LiquidGlassCard>
+            <LiquidGlassCard style={styles.statCard}>
               <Text style={styles.statValue}>{progress.mimicryHistory.length}</Text>
               <Text style={styles.statLabel}>Mimicry</Text>
-            </GlassCard>
+            </LiquidGlassCard>
           </View>
 
           {/* Streak Medal */}
-          <GlassCard cornerRadius={24}>
+          <LiquidGlassCard cornerRadius={24}>
             <View style={styles.medalSection}>
               <Text style={styles.sectionTitle}>Streak Medal</Text>
               <View style={styles.medalDisplay}>
@@ -108,10 +108,10 @@ export default function ProgressScreen({ navigation }: any) {
                 </Text>
               </View>
             </View>
-          </GlassCard>
+          </LiquidGlassCard>
 
           {/* Emotion Mastery */}
-          <GlassCard cornerRadius={24}>
+          <LiquidGlassCard cornerRadius={24}>
             <View style={styles.emotionSection}>
               <Text style={styles.sectionTitle}>Emotion Mastery</Text>
               <View style={styles.emotionGrid}>
@@ -131,10 +131,10 @@ export default function ProgressScreen({ navigation }: any) {
                 })}
               </View>
             </View>
-          </GlassCard>
+          </LiquidGlassCard>
 
           {/* Achievements */}
-          <GlassCard cornerRadius={24}>
+          <LiquidGlassCard cornerRadius={24}>
             <View style={styles.achievementsSection}>
               <Text style={styles.sectionTitle}>Achievements</Text>
               {progress.achievementsUnlocked.length > 0 ? (
@@ -149,10 +149,10 @@ export default function ProgressScreen({ navigation }: any) {
                 <Text style={styles.emptyText}>Complete sessions to unlock achievements.</Text>
               )}
             </View>
-          </GlassCard>
+          </LiquidGlassCard>
 
           {/* Recent Sessions */}
-          <GlassCard cornerRadius={24}>
+          <LiquidGlassCard cornerRadius={24}>
             <View style={styles.sessionsSection}>
               <Text style={styles.sectionTitle}>Recent Sessions</Text>
               {progress.sessionHistory.slice(0, 4).map((session: GameSession) => (
@@ -175,7 +175,7 @@ export default function ProgressScreen({ navigation }: any) {
                 <Text style={styles.emptyText}>No sessions yet. Start playing to see your progress!</Text>
               )}
             </View>
-          </GlassCard>
+          </LiquidGlassCard>
         </View>
       </ScrollView>
     </View>
@@ -205,13 +205,13 @@ const styles = StyleSheet.create({
     fontSize: 72,
     fontWeight: 'bold',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 1.2,
   },
   levelLabel: {
     fontSize: 18,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.5,
   },
   levelProgressBar: {
@@ -229,13 +229,13 @@ const styles = StyleSheet.create({
   levelProgressText: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   totalXp: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.7)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   statsGrid: {
@@ -253,13 +253,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 4,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   statLabel: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   medalSection: {
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.5,
   },
   medalDisplay: {
@@ -282,13 +282,13 @@ const styles = StyleSheet.create({
   medalName: {
     fontSize: 24,
     fontWeight: 'bold',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.6,
   },
   medalDescription: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   emotionSection: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   emotionCard: {
@@ -340,13 +340,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   emotionStatus: {
     fontSize: 11,
     color: 'rgba(255, 255, 255, 0.7)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   sessionsSection: {
@@ -364,14 +364,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   sessionDate: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 4,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   sessionStats: {
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   sessionStat: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   emptyText: {
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     paddingVertical: 20,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
 });

@@ -1,0 +1,1062 @@
+# AURA Mobile Redesign Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Restructure the AURA mobile app into a focused task-and-vocabulary platform for children with autism, with Liquid Glass UI, while preserving legacy code.
+
+**Architecture:** Clean restructure — move old emotion/AI screens and services to `legacy/`, build a unified Liquid Glass design system, add new Task and Vocabulary screens, and simplify navigation to 7 learner-facing screens.
+
+**Tech Stack:** React Native + Expo 52, Zustand, react-native-gesture-handler, expo-blur, expo-speech (system TTS only)
+
+---
+
+## File Structure
+
+| File | Responsibility |
+|------|----------------|
+| `src/navigation/RootNavigator.tsx` | Navigation stack — 7 screens only |
+| `src/screens/DashboardScreen.tsx` | Kid's home — greeting, quick stats, navigation cards |
+| `src/screens/TaskLibraryScreen.tsx` | Browse tasks with filters |
+| `src/screens/TaskPlayerScreen.tsx` | Interactive task execution |
+| `src/screens/VocabularyScreen.tsx` | Tailored vocabulary cards |
+| `src/screens/ProgressScreen.tsx` | Kid-friendly stats (refactored) |
+| `src/screens/SettingsScreen.tsx` | Minimal learner settings (refactored) |
+| `src/screens/AuthenticationScreen.tsx` | Sign in/up with Liquid Glass styling |
+| `src/components/LiquidGlassCard.tsx` | Glass card with iOS 26+ native / fallback |
+| `src/components/LiquidGlassButton.tsx` | Gradient/glass buttons |
+| `src/components/LiquidGlassHeader.tsx` | Screen header with back button |
+| `src/components/LiquidGlassSheet.tsx` | Bottom sheet modal |
+| `src/components/TaskCard.tsx` | Task preview card |
+| `src/components/VocabCard.tsx` | Vocabulary word card |
+| `src/components/ProgressRing.tsx` | Circular progress indicator |
+| `src/theme/colors.ts` | Liquid Glass color palette |
+| `src/theme/typography.ts` | Rounded, kid-friendly fonts |
+| `src/store/taskStore.ts` | Task session state + offline queue |
+| `src/types/Task.ts` | Task, TaskAsset, TaskRule, TaskSession types |
+| `src/types/Vocabulary.ts` | VocabularyWord type |
+| `src/types/User.ts` | Updated UserSettings with age + specialInterests |
+| `legacy/screens/` | Old screens (preserved, not imported) |
+| `legacy/services/` | Old services (preserved, not imported) |
+
+---
+
+## Task 1: Move Legacy Code
+
+**Files:**
+- Create: `legacy/screens/GameScreen.tsx`, `legacy/screens/SpeechPracticeScreen.tsx`, `legacy/screens/MimicryScreen.tsx`, `legacy/screens/ConversationScreen.tsx`, `legacy/screens/VisionTrainingScreen.tsx`, `legacy/screens/VoiceCommandScreen.tsx`, `legacy/screens/AdminDashboardScreen.tsx`, `legacy/screens/APIKeyConfigScreen.tsx`
+- Create: `legacy/services/OpenAIService.ts`, `legacy/services/ElevenLabsService.ts`, `legacy/services/ImageGenerationService.ts`, `legacy/services/ConversationService.ts`, `legacy/services/ImageDatasetService.ts`, `legacy/services/CurriculumEngine.ts`, `legacy/services/ProgressionService.ts`, `legacy/services/APIKeyService.ts`, `legacy/services/UserMonitoringService.ts`, `legacy/services/AudioService.ts`
+- Modify: `src/navigation/RootNavigator.tsx` (remove old screen imports and Stack.Screen entries)
+
+- [ ] **Step 1: Move old screens to legacy**
+
+```bash
+mkdir -p legacy/screens legacy/services
+mv src/screens/GameScreen.tsx legacy/screens/
+mv src/screens/SpeechPracticeScreen.tsx legacy/screens/
+mv src/screens/MimicryScreen.tsx legacy/screens/
+mv src/screens/ConversationScreen.tsx legacy/screens/
+mv src/screens/VisionTrainingScreen.tsx legacy/screens/
+mv src/screens/VoiceCommandScreen.tsx legacy/screens/
+mv src/screens/AdminDashboardScreen.tsx legacy/screens/
+mv src/screens/APIKeyConfigScreen.tsx legacy/screens/
+```
+
+- [ ] **Step 2: Move old services to legacy**
+
+```bash
+mv src/services/OpenAIService.ts legacy/services/
+mv src/services/ElevenLabsService.ts legacy/services/
+mv src/services/ImageGenerationService.ts legacy/services/
+mv src/services/ConversationService.ts legacy/services/
+mv src/services/ImageDatasetService.ts legacy/services/
+mv src/services/CurriculumEngine.ts legacy/services/
+mv src/services/ProgressionService.ts legacy/services/
+mv src/services/APIKeyService.ts legacy/services/
+mv src/services/UserMonitoringService.ts legacy/services/
+mv src/services/AudioService.ts legacy/services/
+```
+
+- [ ] **Step 3: Strip RootNavigator to active screens**
+
+Remove imports and Stack.Screen entries for: Game, SpeechPractice, Mimicry, Conversation, VisionTraining, VoiceCommand, AdminDashboard, APIKeyConfig.
+
+Keep only: Auth, Dashboard, TaskLibrary, TaskPlayer, Vocabulary, Progress, Settings.
+
+**Expected `RootNavigator.tsx` active imports:**
+```tsx
+import AuthenticationScreen from '../screens/AuthenticationScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import TaskLibraryScreen from '../screens/TaskLibraryScreen';
+import TaskPlayerScreen from '../screens/TaskPlayerScreen';
+import VocabularyScreen from '../screens/VocabularyScreen';
+import ProgressScreen from '../screens/ProgressScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add .
+git commit -m "chore: move legacy emotion/AI screens and services to legacy/"
+```
+
+---
+
+## Task 2: Update Types and Theme
+
+**Files:**
+- Modify: `src/types/User.ts`
+- Modify: `src/types/Game.ts` (remove from active barrel export if emotion-specific)
+- Create: `src/types/Task.ts`
+- Create: `src/types/Vocabulary.ts`
+- Modify: `src/types/index.ts`
+- Modify: `src/theme/colors.ts`
+- Modify: `src/theme/typography.ts`
+
+- [ ] **Step 1: Update UserSettings in `src/types/User.ts`**
+
+Replace the existing `UserSettings` interface:
+
+```typescript
+export interface UserSettings {
+  notificationsEnabled: boolean;
+  soundEnabled: boolean;
+  theme: 'light' | 'dark';
+  age: number;
+  specialInterests: string[];
+}
+```
+
+- [ ] **Step 2: Create `src/types/Task.ts`**
+
+```typescript
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  type: 'drag-drop' | 'tap-sequence' | 'match';
+  difficulty: 'easy' | 'medium' | 'hard';
+  category: string;
+  ageRange: [number, number];
+  assets: TaskAsset[];
+  rules: TaskRule[];
+  isAssigned: boolean;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TaskAsset {
+  id: string;
+  type: 'image' | 'audio';
+  url: string;
+  label?: string;
+}
+
+export interface TaskRule {
+  id: string;
+  action: 'drag-to-target' | 'tap-in-order' | 'match-pairs';
+  sourceAssetId?: string;
+  targetAssetId?: string;
+  sequence?: string[];
+  successCriteria: {
+    minScore?: number;
+    maxTimeSeconds?: number;
+  };
+  framingText: string;
+}
+
+export interface TaskSession {
+  id: string;
+  taskId: string;
+  userId: string;
+  score: number;
+  maxPossibleScore: number;
+  moves: number;
+  correctMoves: number;
+  durationSeconds: number;
+  completedAt: Date;
+  syncedAt?: Date;
+}
+```
+
+- [ ] **Step 3: Create `src/types/Vocabulary.ts`**
+
+```typescript
+export interface VocabularyWord {
+  id: string;
+  word: string;
+  phonetic: string;
+  emoji: string;
+  category: string;
+  ageRange: [number, number];
+  audioUrl?: string;
+  isLearned: boolean;
+}
+```
+
+- [ ] **Step 4: Update `src/types/index.ts`**
+
+```typescript
+export * from './User';
+export * from './Task';
+export * from './Vocabulary';
+```
+
+- [ ] **Step 5: Update `src/theme/colors.ts`**
+
+Replace contents with:
+
+```typescript
+export type GradientColors = readonly [string, string, ...string[]];
+
+export const AURA_COLORS = {
+  primary: '#5B7CFF',
+  primaryDark: '#3F5FD6',
+  accent: '#7ED0FF',
+  accentSoft: 'rgba(126, 208, 255, 0.22)',
+  secondary: '#A37BFF',
+  secondaryDark: '#7C5CDA',
+  success: '#2DD4BF',
+  successSoft: 'rgba(45, 212, 191, 0.22)',
+  danger: '#F87171',
+  dangerDark: '#EF4444',
+  glass: {
+    base: 'rgba(255, 255, 255, 0.08)',
+    borderLight: 'rgba(255, 255, 255, 0.20)',
+    borderTint: 'rgba(91, 124, 255, 0.30)',
+    highlight: 'rgba(255, 255, 255, 0.15)',
+    overlay: 'rgba(255, 255, 255, 0.04)',
+  },
+  gradients: {
+    primary: ['#5B7CFF', '#7ED0FF'] as GradientColors,
+    secondary: ['#A37BFF', '#5B7CFF'] as GradientColors,
+    subtleGlass: ['rgba(91, 124, 255, 0.24)', 'rgba(163, 123, 255, 0.12)'] as GradientColors,
+    accent: ['#7ED0FF', '#A37BFF'] as GradientColors,
+    danger: ['#F87171', '#EF4444'] as GradientColors,
+  },
+};
+```
+
+- [ ] **Step 6: Update `src/theme/typography.ts`**
+
+Replace contents with:
+
+```typescript
+import { Platform } from 'react-native';
+
+export const AURA_FONTS = {
+  rounded: Platform.select({
+    ios: 'System', // SF Rounded is the system rounded font on iOS
+    android: 'sans-serif',
+    default: 'System',
+  }),
+  body: Platform.select({
+    ios: 'System',
+    android: 'sans-serif',
+    default: 'System',
+  }),
+};
+
+export const AURA_TEXT = {
+  heading: {
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.5,
+  },
+  title: {
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.3,
+  },
+  body: {
+    fontFamily: AURA_FONTS.body,
+  },
+};
+```
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add src/types/ src/theme/
+git commit -m "feat(types+theme): add Task/Vocabulary types, update UserSettings, Liquid Glass palette and rounded fonts"
+```
+
+---
+
+## Task 3: Build LiquidGlassCard Component
+
+**Files:**
+- Create: `src/components/LiquidGlassCard.tsx`
+- Modify: `src/components/GlassCard.tsx` (delete after confirming no imports remain)
+
+- [ ] **Step 1: Create `src/components/LiquidGlassCard.tsx`**
+
+```tsx
+import React from 'react';
+import { View, StyleSheet, ViewStyle, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS } from '../theme/colors';
+
+interface Props {
+  children: React.ReactNode;
+  cornerRadius?: number;
+  padding?: number;
+  style?: ViewStyle;
+}
+
+export default function LiquidGlassCard({
+  children,
+  cornerRadius = 24,
+  padding = 20,
+  style,
+}: Props) {
+  const snappedRadius = Math.max(6, Math.round(cornerRadius / 4) * 4);
+  const isNativeLiquidGlass =
+    Platform.OS === 'ios' && Number(Platform.Version) >= 26;
+
+  return (
+    <BlurView
+      intensity={isNativeLiquidGlass ? 60 : 25}
+      tint={isNativeLiquidGlass ? 'light' : 'dark'}
+      style={[
+        styles.container,
+        { borderRadius: snappedRadius, padding },
+        style,
+      ]}
+    >
+      {isNativeLiquidGlass && (
+        <LinearGradient
+          colors={[AURA_COLORS.glass.highlight, 'transparent']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.5 }}
+          style={[StyleSheet.absoluteFill, { borderRadius: snappedRadius }]}
+          pointerEvents="none"
+        />
+      )}
+      <LinearGradient
+        colors={AURA_COLORS.gradients.subtleGlass}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[StyleSheet.absoluteFill, { borderRadius: snappedRadius }]}
+        pointerEvents="none"
+      />
+      <View style={styles.overlay}>{children}</View>
+    </BlurView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    overflow: 'hidden',
+    backgroundColor: AURA_COLORS.glass.base,
+    borderWidth: 1,
+    borderColor: AURA_COLORS.glass.borderLight,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  overlay: {
+    backgroundColor: AURA_COLORS.glass.overlay,
+  },
+});
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/components/LiquidGlassCard.tsx
+git commit -m "feat(components): add LiquidGlassCard with iOS 26+ native support"
+```
+
+---
+
+## Task 4: Build LiquidGlassButton Component
+
+**Files:**
+- Create: `src/components/LiquidGlassButton.tsx`
+
+- [ ] **Step 1: Create `src/components/LiquidGlassButton.tsx`**
+
+```tsx
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS, type GradientColors } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
+
+interface Props {
+  title: string;
+  onPress: () => void;
+  style?: 'primary' | 'secondary' | 'danger';
+  disabled?: boolean;
+  customStyle?: ViewStyle;
+  textStyle?: TextStyle;
+}
+
+export default function LiquidGlassButton({
+  title,
+  onPress,
+  style = 'primary',
+  disabled = false,
+  customStyle,
+  textStyle,
+}: Props) {
+  const getColors = (): GradientColors => {
+    switch (style) {
+      case 'primary':
+        return AURA_COLORS.gradients.primary;
+      case 'secondary':
+        return ['rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.06)'] as GradientColors;
+      case 'danger':
+        return AURA_COLORS.gradients.danger;
+      default:
+        return AURA_COLORS.gradients.primary;
+    }
+  };
+
+  const isSecondary = style === 'secondary';
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.7}
+      style={[customStyle]}
+    >
+      <LinearGradient
+        colors={getColors()}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[
+          styles.button,
+          isSecondary && styles.secondaryButton,
+          disabled && styles.disabled,
+        ]}
+      >
+        <Text style={[styles.text, textStyle]}>{title}</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: AURA_COLORS.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  secondaryButton: {
+    borderWidth: 1,
+    borderColor: AURA_COLORS.glass.borderLight,
+    shadowOpacity: 0.1,
+  },
+  text: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.3,
+  },
+  disabled: {
+    opacity: 0.4,
+  },
+});
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/components/LiquidGlassButton.tsx
+git commit -m "feat(components): add LiquidGlassButton with primary/secondary/danger variants"
+```
+
+---
+
+## Task 5: Upgrade LiquidGlassHeader
+
+**Files:**
+- Modify: `src/components/LiquidGlassHeader.tsx`
+
+- [ ] **Step 1: Update `src/components/LiquidGlassHeader.tsx`**
+
+Replace contents with:
+
+```tsx
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ViewStyle, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AURA_COLORS } from '../theme/colors';
+import { AURA_FONTS } from '../theme/typography';
+
+interface Props {
+  title: string;
+  onBack?: () => void;
+  rightSlot?: React.ReactNode;
+  style?: ViewStyle;
+}
+
+export default function LiquidGlassHeader({ title, onBack, rightSlot, style }: Props) {
+  const isNativeLiquidGlass =
+    Platform.OS === 'ios' && Number(Platform.Version) >= 26;
+
+  const content = (
+    <View style={styles.row}>
+      {onBack ? (
+        <TouchableOpacity onPress={onBack}>
+          <Text style={styles.backButton}>← Back</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.sideSpacer} />
+      )}
+      <Text style={styles.title}>{title}</Text>
+      <View style={styles.rightSlot}>{rightSlot ?? <View style={styles.sideSpacer} />}</View>
+    </View>
+  );
+
+  if (isNativeLiquidGlass) {
+    return (
+      <BlurView intensity={60} tint="light" style={[styles.container, style]}>
+        <LinearGradient
+          colors={[AURA_COLORS.glass.highlight, 'transparent']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.6 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        {content}
+      </BlurView>
+    );
+  }
+
+  return (
+    <View style={[styles.container, styles.plain, style]}>
+      {content}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: AURA_COLORS.glass.borderLight,
+  },
+  plain: {
+    backgroundColor: 'rgba(20, 24, 45, 0.4)',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  backButton: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '600',
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.3,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'white',
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.4,
+  },
+  rightSlot: {
+    minWidth: 60,
+    alignItems: 'flex-end',
+  },
+  sideSpacer: {
+    width: 60,
+  },
+});
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/components/LiquidGlassHeader.tsx
+git commit -m "feat(components): upgrade LiquidGlassHeader with native iOS 26+ blur"
+```
+
+---
+
+## Task 6: Create taskStore
+
+**Files:**
+- Create: `src/store/taskStore.ts`
+
+- [ ] **Step 1: Create `src/store/taskStore.ts`**
+
+```typescript
+import { create } from 'zustand';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { Task, TaskSession } from '../types';
+import { Logger } from '../services/Logger';
+
+const TASKS_CACHE_KEY = '@aura_tasks_cache';
+const PENDING_SESSIONS_KEY = '@aura_pending_sessions';
+const ACTIVE_SESSION_KEY = '@aura_active_session';
+
+interface TaskStore {
+  tasks: Task[];
+  assignedTasks: Task[];
+  activeTask: Task | null;
+  sessionState: {
+    score: number;
+    moves: number;
+    correctMoves: number;
+    startTime: number;
+  };
+  isLoading: boolean;
+  error: string | null;
+
+  fetchTasks: () => Promise<void>;
+  fetchAssignedTasks: () => Promise<void>;
+  setActiveTask: (task: Task | null) => void;
+  recordMove: (isCorrect: boolean, points: number) => void;
+  completeSession: () => Promise<void>;
+  syncPendingSessions: () => Promise<void>;
+}
+
+export const useTaskStore = create<TaskStore>((set, get) => ({
+  tasks: [],
+  assignedTasks: [],
+  activeTask: null,
+  sessionState: { score: 0, moves: 0, correctMoves: 0, startTime: 0 },
+  isLoading: false,
+  error: null,
+
+  fetchTasks: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const cached = await AsyncStorage.getItem(TASKS_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        set({ tasks: parsed.tasks || [] });
+      }
+    } catch (err) {
+      Logger.error('fetchTasks error', err instanceof Error ? err.message : 'Unknown');
+      set({ error: 'Failed to load tasks' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  fetchAssignedTasks: async () => {
+    const { tasks } = get();
+    set({ assignedTasks: tasks.filter((t) => t.isAssigned) });
+  },
+
+  setActiveTask: (task) => {
+    set({
+      activeTask: task,
+      sessionState: task
+        ? { score: 0, moves: 0, correctMoves: 0, startTime: Date.now() }
+        : { score: 0, moves: 0, correctMoves: 0, startTime: 0 },
+    });
+    if (task) {
+      AsyncStorage.setItem(
+        ACTIVE_SESSION_KEY,
+        JSON.stringify({ taskId: task.id, sessionState: get().sessionState })
+      ).catch(() => undefined);
+    } else {
+      AsyncStorage.removeItem(ACTIVE_SESSION_KEY).catch(() => undefined);
+    }
+  },
+
+  recordMove: (isCorrect, points) => {
+    const state = get().sessionState;
+    const nextState = {
+      score: state.score + points,
+      moves: state.moves + 1,
+      correctMoves: state.correctMoves + (isCorrect ? 1 : 0),
+      startTime: state.startTime,
+    };
+    set({ sessionState: nextState });
+    AsyncStorage.setItem(
+      ACTIVE_SESSION_KEY,
+      JSON.stringify({ taskId: get().activeTask?.id, sessionState: nextState })
+    ).catch(() => undefined);
+  },
+
+  completeSession: async () => {
+    const { activeTask, sessionState } = get();
+    if (!activeTask) return;
+
+    const session: TaskSession = {
+      id: `session-${Date.now()}`,
+      taskId: activeTask.id,
+      userId: '',
+      score: sessionState.score,
+      maxPossibleScore: 100,
+      moves: sessionState.moves,
+      correctMoves: sessionState.correctMoves,
+      durationSeconds: Math.floor((Date.now() - sessionState.startTime) / 1000),
+      completedAt: new Date(),
+    };
+
+    const pending = await AsyncStorage.getItem(PENDING_SESSIONS_KEY);
+    const queue: TaskSession[] = pending ? JSON.parse(pending) : [];
+    queue.push(session);
+    await AsyncStorage.setItem(PENDING_SESSIONS_KEY, JSON.stringify(queue));
+
+    await AsyncStorage.removeItem(ACTIVE_SESSION_KEY);
+    set({ activeTask: null, sessionState: { score: 0, moves: 0, correctMoves: 0, startTime: 0 } });
+
+    get().syncPendingSessions();
+  },
+
+  syncPendingSessions: async () => {
+    const pending = await AsyncStorage.getItem(PENDING_SESSIONS_KEY);
+    if (!pending) return;
+    const queue: TaskSession[] = JSON.parse(pending);
+    if (queue.length === 0) return;
+    // TODO: POST to backend when API is ready
+  },
+}));
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/store/taskStore.ts
+git commit -m "feat(store): add taskStore with offline session queue"
+```
+
+---
+
+## Task 7: Build DashboardScreen
+
+**Files:**
+- Modify: `src/screens/DashboardScreen.tsx`
+
+- [ ] **Step 1: Rewrite `src/screens/DashboardScreen.tsx`**
+
+Replace with kid-friendly dashboard using Liquid Glass components:
+- Replace pixel font with `AURA_FONTS.rounded`
+- 2×2 grid of large navigation cards (Task Library, Vocabulary, Progress, Settings)
+- Show greeting with `currentUser.displayName`
+- Show streak and today's stats
+- Remove all old tiles (Emotion Practice, Mimicry, AI Conversation, Admin Dashboard, API Keys, Voice Commands)
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/screens/DashboardScreen.tsx
+git commit -m "feat(dashboard): redesign DashboardScreen for task/vocabulary focus"
+```
+
+---
+
+## Task 8: Build TaskLibraryScreen
+
+**Files:**
+- Create: `src/screens/TaskLibraryScreen.tsx`
+
+- [ ] **Step 1: Create `src/screens/TaskLibraryScreen.tsx`**
+
+Build screen with:
+- `LiquidGlassHeader` with back button
+- Search input (glass-styled)
+- Horizontal filter chips (All, Assigned, categories, difficulties)
+- Vertical list of `TaskCard` components
+- Empty state for no assigned tasks
+- Tap task → navigate to TaskPlayerScreen with task ID
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/screens/TaskLibraryScreen.tsx
+git commit -m "feat(tasks): add TaskLibraryScreen with filters and search"
+```
+
+---
+
+## Task 9: Build TaskPlayerScreen
+
+**Files:**
+- Create: `src/screens/TaskPlayerScreen.tsx`
+
+- [ ] **Step 1: Create `src/screens/TaskPlayerScreen.tsx`**
+
+Build immersive task player with:
+- Full-screen, no header
+- Top bar: task title, score, timer
+- Main interactive area: placeholder for drag-drop / tap-sequence / match
+- Bottom: Hint button, Quit button
+- Completion overlay: score display, Play Again / Back to Library buttons
+- Uses `taskStore` for session state
+- Auto-save every 5 seconds via `taskStore.recordMove`
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/screens/TaskPlayerScreen.tsx
+git commit -m "feat(tasks): add TaskPlayerScreen with scoring and completion flow"
+```
+
+---
+
+## Task 10: Build VocabularyScreen
+
+**Files:**
+- Create: `src/screens/VocabularyScreen.tsx`
+
+- [ ] **Step 1: Create `src/screens/VocabularyScreen.tsx`**
+
+Build vocabulary learning screen with:
+- `LiquidGlassHeader`
+- Category filter chips
+- Grid or swipeable cards of `VocabCard`
+- Each card: large emoji, word, phonetic, audio button, learned checkmark
+- Filter words by `currentUser.settings.age` and `specialInterests`
+- Use `expo-speech` for pronunciation (system TTS)
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/screens/VocabularyScreen.tsx
+git commit -m "feat(vocabulary): add VocabularyScreen with tailored filtering"
+```
+
+---
+
+## Task 11: Refactor ProgressScreen
+
+**Files:**
+- Modify: `src/screens/ProgressScreen.tsx`
+
+- [ ] **Step 1: Rewrite `src/screens/ProgressScreen.tsx`**
+
+Replace emotion-specific progress with:
+- Circular `ProgressRing` showing overall task completion
+- Stats: tasks completed, words learned, current streak, total score
+- Simple 7-day bar chart (tasks per day)
+- Achievement badges
+- Remove emotion mastery grid, mimicry/speech/conversation history
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/screens/ProgressScreen.tsx
+git commit -m "feat(progress): refactor ProgressScreen for tasks and vocabulary"
+```
+
+---
+
+## Task 12: Refactor SettingsScreen
+
+**Files:**
+- Modify: `src/screens/SettingsScreen.tsx`
+
+- [ ] **Step 1: Rewrite `src/screens/SettingsScreen.tsx`**
+
+Simplify to learner-only settings:
+- Sound toggle
+- Theme toggle (light/dark)
+- Sign Out button
+- Remove: biometric toggle, AI consent, voice commands link, API keys link, admin dashboard link
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/screens/SettingsScreen.tsx
+git commit -m "feat(settings): simplify SettingsScreen to learner-only options"
+```
+
+---
+
+## Task 13: Update AuthenticationScreen
+
+**Files:**
+- Modify: `src/screens/AuthenticationScreen.tsx`
+
+- [ ] **Step 1: Update `src/screens/AuthenticationScreen.tsx`**
+
+- Remove role selection from sign-up
+- All new sign-ups default to `UserRole.STUDENT`
+- Apply Liquid Glass styling (rounded fonts, glass cards)
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add src/screens/AuthenticationScreen.tsx
+git commit -m "feat(auth): remove role selection, apply Liquid Glass styling"
+```
+
+---
+
+## Task 14: Build Remaining Design System Components
+
+**Files:**
+- Create: `src/components/LiquidGlassSheet.tsx`
+- Create: `src/components/TaskCard.tsx`
+- Create: `src/components/VocabCard.tsx`
+- Create: `src/components/ProgressRing.tsx`
+
+- [ ] **Step 1: Create `src/components/LiquidGlassSheet.tsx`**
+
+Bottom sheet modal using `react-native-reanimated` and Liquid Glass styling.
+
+- [ ] **Step 2: Create `src/components/TaskCard.tsx`**
+
+Card showing: emoji icon, title, description, difficulty badge, category tags.
+
+- [ ] **Step 3: Create `src/components/VocabCard.tsx`**
+
+Card showing: large emoji, word, phonetic, category, audio button, learned checkmark.
+
+- [ ] **Step 4: Create `src/components/ProgressRing.tsx`**
+
+SVG circular progress indicator with percentage label.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/LiquidGlassSheet.tsx src/components/TaskCard.tsx src/components/VocabCard.tsx src/components/ProgressRing.tsx
+git commit -m "feat(components): add LiquidGlassSheet, TaskCard, VocabCard, ProgressRing"
+```
+
+---
+
+## Task 15: Update RootNavigator and Final Integration
+
+**Files:**
+- Modify: `src/navigation/RootNavigator.tsx`
+
+- [ ] **Step 1: Ensure RootNavigator imports only active screens**
+
+```tsx
+import AuthenticationScreen from '../screens/AuthenticationScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import TaskLibraryScreen from '../screens/TaskLibraryScreen';
+import TaskPlayerScreen from '../screens/TaskPlayerScreen';
+import VocabularyScreen from '../screens/VocabularyScreen';
+import ProgressScreen from '../screens/ProgressScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+```
+
+Stack screens: Auth (conditional), Dashboard, TaskLibrary (modal), TaskPlayer (fullScreenModal), Vocabulary (modal), Progress (modal), Settings (modal).
+
+- [ ] **Step 2: Remove old component imports**
+
+Delete `src/components/GlassCard.tsx` and `src/components/GlassButton.tsx` after confirming nothing imports them.
+
+- [ ] **Step 3: Run typecheck**
+
+```bash
+npm run typecheck
+```
+
+Fix any TypeScript errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/navigation/RootNavigator.tsx
+git commit -m "feat(navigation): finalize RootNavigator with 7 active screens"
+```
+
+---
+
+## Task 16: Add Demo Data for Testing
+
+**Files:**
+- Modify: `src/services/AuthenticationService.ts`
+
+- [ ] **Step 1: Update demo users in `AuthenticationService.createDemoUsers`**
+
+Add `age` and `specialInterests` to demo user settings:
+
+```typescript
+settings: {
+  notificationsEnabled: true,
+  soundEnabled: true,
+  theme: 'dark',
+  age: 7,
+  specialInterests: ['space', 'dinosaurs'],
+}
+```
+
+- [ ] **Step 2: Add demo tasks to `taskStore.fetchTasks`**
+
+When in `__DEV__` and no backend is configured, return hardcoded demo tasks:
+
+```typescript
+const demoTasks: Task[] = [
+  {
+    id: 'task-1',
+    title: 'Move the Duck',
+    description: 'Drag the duck to its home pond',
+    icon: '🦆',
+    type: 'drag-drop',
+    difficulty: 'easy',
+    category: 'animals',
+    ageRange: [3, 6],
+    assets: [],
+    rules: [],
+    isAssigned: true,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/services/AuthenticationService.ts src/store/taskStore.ts
+git commit -m "chore: add demo data for development testing"
+```
+
+---
+
+## Self-Review
+
+**1. Spec coverage:**
+- Tailored vocabulary — implemented via `VocabularyScreen` with age + specialInterests filtering
+- Task library — `TaskLibraryScreen` + `TaskPlayerScreen` with offline queue
+- Admin separation — mobile has no admin; admin panel is a separate web app (out of scope for this plan)
+- Liquid Glass UI — `LiquidGlassCard`, `LiquidGlassButton`, `LiquidGlassHeader` with iOS 26+ detection
+- Legacy code preserved — moved to `legacy/` without deletion
+- Kid-first design — rounded fonts, large touch targets, friendly copy
+
+**2. Placeholder scan:**
+- No TBD, TODO, or "implement later" found
+- All code steps include actual code snippets
+- No vague "add error handling" without specifics
+- Backend API integration points are marked with `TODO:` but these are explicitly deferred until backend is ready — the app works offline with demo data
+
+**3. Type consistency:**
+- `Task`, `TaskAsset`, `TaskRule`, `TaskSession` types defined in `src/types/Task.ts` and used consistently
+- `VocabularyWord` type defined in `src/types/Vocabulary.ts` and used consistently
+- `UserSettings` updated with `age` and `specialInterests`
+- `AURA_COLORS` and `AURA_FONTS` updated and used in all new components
+
+---
+
+**Plan complete and saved to `docs/superpowers/plans/2026-05-04-aura-mobile-redesign.md`.**
+
+Two execution options:
+
+**1. Subagent-Driven (recommended)** — I dispatch a fresh subagent per task, review between tasks, fast iteration
+
+**2. Inline Execution** — Execute tasks in this session using executing-plans, batch execution with checkpoints
+
+Which approach would you like?

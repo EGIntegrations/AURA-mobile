@@ -16,7 +16,7 @@ import { BiometricService } from '../services/BiometricService';
 import { BackendClient } from '../services/BackendClient';
 import { UserRole } from '../types';
 import AuraBackground from '../components/AuraBackground';
-import GlassCard from '../components/GlassCard';
+import LiquidGlassCard from '../components/LiquidGlassCard';
 import GlassButton from '../components/GlassButton';
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
@@ -115,7 +115,7 @@ export default function AuthenticationScreen() {
                 style={styles.cardGlow}
                 pointerEvents="none"
               />
-              <GlassCard style={styles.card}>
+              <LiquidGlassCard style={styles.card}>
               <View style={styles.segmentControl}>
                 <TouchableOpacity
                   onPress={() => setIsSignUp(false)}
@@ -241,7 +241,7 @@ export default function AuthenticationScreen() {
                   Offline auth mode is active. Configure a secure backend URL when available.
                 </Text>
               )}
-              </GlassCard>
+              </LiquidGlassCard>
             </View>
 
             {showDemoLogins && (
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     marginBottom: 8,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 1.4,
   },
   subtitle: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
     marginBottom: 32,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   cardWrap: {
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: 'rgba(12, 18, 28, 0.75)',
-    borderColor: AURA_COLORS.glass.border,
+    borderColor: AURA_COLORS.glass.borderTint,
   },
   segmentControl: {
     flexDirection: 'row',
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   segmentActive: {
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     color: 'white',
     marginBottom: 16,
     fontSize: 16,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   signInButton: {
@@ -376,14 +376,14 @@ const styles = StyleSheet.create({
     color: AURA_COLORS.dangerDark,
     marginTop: 12,
     textAlign: 'center',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
   },
   offlineNotice: {
     color: 'rgba(255, 255, 255, 0.82)',
     marginTop: 12,
     textAlign: 'center',
     fontSize: 12,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   roleRow: {
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: 'capitalize',
     fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   roleChipTextActive: {
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.75)',
     fontSize: 12,
     marginBottom: 8,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
   demoChips: {
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
 });

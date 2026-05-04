@@ -13,7 +13,7 @@ import { UserRole } from '../types';
 import { BackendClient } from '../services/BackendClient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AuraBackground from '../components/AuraBackground';
-import GlassCard from '../components/GlassCard';
+import LiquidGlassCard from '../components/LiquidGlassCard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AURA_COLORS, type GradientColors } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
@@ -76,7 +76,7 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
 
           {/* Progress Card */}
-          <GlassCard cornerRadius={30} style={styles.progressCard}>
+          <LiquidGlassCard cornerRadius={30} style={styles.progressCard}>
             <View style={styles.progressRow}>
               <View>
                 <Text style={styles.progressLabel}>
@@ -95,7 +95,7 @@ export default function DashboardScreen({ navigation }: any) {
                 </Text>
               </View>
             </View>
-          </GlassCard>
+          </LiquidGlassCard>
 
           {/* Feature Tiles */}
           <View style={styles.tilesContainer}>
@@ -153,7 +153,7 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
 
           {/* Stats Strip */}
-          <GlassCard cornerRadius={28} padding={0} style={styles.statsCard}>
+          <LiquidGlassCard cornerRadius={28} padding={0} style={styles.statsCard}>
             <View style={styles.statsRow}>
               <StatTile title="Sessions" value={progress.totalSessions} />
               <View style={styles.divider} />
@@ -164,7 +164,7 @@ export default function DashboardScreen({ navigation }: any) {
               <View style={styles.divider} />
               <StatTile title="Correct" value={progress.totalCorrectAnswers} />
             </View>
-          </GlassCard>
+          </LiquidGlassCard>
 
           {/* Sign Out Button */}
           <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -181,7 +181,7 @@ export default function DashboardScreen({ navigation }: any) {
         onRequestClose={() => setShowEmotionPracticeMenu(false)}
       >
         <View style={styles.modalOverlay}>
-          <GlassCard style={styles.submenuCard}>
+          <LiquidGlassCard style={styles.submenuCard}>
             <Text style={styles.submenuTitle}>Choose Practice Mode</Text>
             <Text style={styles.submenuSubtitle}>How do you want to practice?</Text>
 
@@ -221,7 +221,7 @@ export default function DashboardScreen({ navigation }: any) {
             >
               <Text style={styles.submenuCancelText}>Cancel</Text>
             </TouchableOpacity>
-          </GlassCard>
+          </LiquidGlassCard>
         </View>
       </Modal>
     </View>
@@ -301,14 +301,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 8,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 1.2,
   },
   subtitle: {
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.84)',
     textAlign: 'center',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   progressCard: {
@@ -326,13 +326,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: 'white',
     marginBottom: 4,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.6,
   },
   progressSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   tilesContainer: {
@@ -369,13 +369,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 2,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.5,
   },
   tileSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.84)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   chevron: {
@@ -399,13 +399,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
     marginBottom: 4,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   statTitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   divider: {
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     color: AURA_COLORS.dangerDark,
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   modalOverlay: {
@@ -440,14 +440,14 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.6,
     textAlign: 'center',
   },
   submenuSubtitle: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
     textAlign: 'center',
   },
@@ -471,13 +471,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.5,
   },
   submenuButtonDesc: {
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.85)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   submenuCancelButton: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   submenuCancelText: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.7)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
 });

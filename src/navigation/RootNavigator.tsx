@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     marginTop: 20,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   errorTitle: {
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   errorMessage: {
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
     fontStyle: 'italic',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
 });

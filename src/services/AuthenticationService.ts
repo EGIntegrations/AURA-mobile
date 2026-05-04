@@ -178,8 +178,9 @@ export class AuthenticationService {
       settings: {
         notificationsEnabled: true,
         soundEnabled: true,
-        preferredVoice: 'alloy',
         theme: 'dark',
+        age: 6,
+        specialInterests: [],
       },
       permissions: this.getDefaultPermissions(sanitizedRole),
     };
@@ -492,8 +493,9 @@ export class AuthenticationService {
       settings: {
         notificationsEnabled: true,
         soundEnabled: true,
-        preferredVoice: 'alloy',
         theme: 'dark',
+        age: 6,
+        specialInterests: [],
       },
       permissions: this.getDefaultPermissions(UserRole.STUDENT),
     };

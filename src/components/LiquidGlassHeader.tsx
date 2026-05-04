@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: AURA_COLORS.glass.border,
+    borderColor: AURA_COLORS.glass.borderTint,
   },
   plain: {
     backgroundColor: 'rgba(20, 24, 45, 0.4)',
@@ -72,14 +72,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.5,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.6,
   },
   rightSlot: {

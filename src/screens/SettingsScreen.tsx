@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
-import GlassCard from '../components/GlassCard';
+import LiquidGlassCard from '../components/LiquidGlassCard';
 import GlassButton from '../components/GlassButton';
 import { BiometricService } from '../services/BiometricService';
 import { ConsentService } from '../services/ConsentService';
@@ -97,7 +97,7 @@ export default function SettingsScreen({ navigation }: any) {
           style={styles.headerCard}
         />
 
-        <GlassCard>
+        <LiquidGlassCard>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Access</Text>
             <Text style={styles.sectionSubtitle}>Secure sign-in preferences</Text>
@@ -120,9 +120,9 @@ export default function SettingsScreen({ navigation }: any) {
               thumbColor={biometricEnabled ? AURA_COLORS.accent : 'rgba(255, 255, 255, 0.9)'}
             />
           </View>
-        </GlassCard>
+        </LiquidGlassCard>
 
-        <GlassCard>
+        <LiquidGlassCard>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Voice Commands</Text>
             <Text style={styles.sectionSubtitle}>
@@ -134,9 +134,9 @@ export default function SettingsScreen({ navigation }: any) {
             onPress={() => navigation.navigate('VoiceCommands')}
             customStyle={styles.actionButton}
           />
-        </GlassCard>
+        </LiquidGlassCard>
 
-        <GlassCard>
+        <LiquidGlassCard>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>AI Data Processing</Text>
             <Text style={styles.sectionSubtitle}>
@@ -157,7 +157,7 @@ export default function SettingsScreen({ navigation }: any) {
               thumbColor={aiConsentEnabled ? AURA_COLORS.accent : 'rgba(255, 255, 255, 0.9)'}
             />
           </View>
-        </GlassCard>
+        </LiquidGlassCard>
       </ScrollView>
     </View>
   );
@@ -184,14 +184,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: 'white',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.4,
   },
   sectionSubtitle: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.7)',
     marginTop: 4,
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   settingRow: {
@@ -208,13 +208,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   settingDescription: {
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.75)',
-    fontFamily: AURA_FONTS.pixel,
+    fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
   actionButton: {

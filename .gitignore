@@ -14,3 +14,4 @@ keys/
 *.keystore
 secrets/
 credentials/
+.superpowers/
