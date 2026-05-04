@@ -93,7 +93,7 @@ export default function SettingsScreen({ navigation }: any) {
       >
         <LiquidGlassHeader
           title="Settings"
-          onBack={() => navigation.goBack()}
+          onBackPress={() => navigation.goBack()}
           style={styles.headerCard}
         />
 

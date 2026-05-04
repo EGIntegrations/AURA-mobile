@@ -49,7 +49,7 @@ export default function ProgressScreen({ navigation }: any) {
           {/* Header */}
           <LiquidGlassHeader
             title="My Progress"
-            onBack={() => navigation.goBack()}
+            onBackPress={() => navigation.goBack()}
             style={styles.headerCard}
           />
 
