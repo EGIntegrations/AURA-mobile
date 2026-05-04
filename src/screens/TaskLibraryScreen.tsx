@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTaskStore } from '../store/taskStore';
 import { useAuthStore } from '../store/authStore';
 import { Task } from '../types';
+
 import AuraBackground from '../components/AuraBackground';
 import LiquidGlassCard from '../components/LiquidGlassCard';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
@@ -51,7 +52,7 @@ export default function TaskLibraryScreen() {
   }, [assignedTasks, searchQuery, selectedCategory, selectedDifficulty]);
 
   const handleTaskPress = (taskId: string) => {
-    (navigation.navigate as any)('TaskPlayer', { taskId });
+    (navigation as any).navigate('TaskPlayer', { taskId });
   };
 
   return (
