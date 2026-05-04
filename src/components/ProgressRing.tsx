@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 
 export interface ProgressRingProps {
@@ -10,104 +9,95 @@ export interface ProgressRingProps {
   color?: string;
 }
 
-const BG_COLOR = 'rgba(255, 255, 255, 0.15)';
-
 export default function ProgressRing({
-  progress,
-  size = 100,
-  strokeWidth = 8,
-  color = AURA_COLORS.primary,
+  progress: rawProgress,
+  size = 120,
+  strokeWidth = 10,
+  color = '#5B7CFF',
 }: ProgressRingProps) {
-  const clampedProgress = Math.min(Math.max(progress, 0), 1);
-  const percentage = Math.round(clampedProgress * 100);
-
-  const isOverHalf = clampedProgress > 0.5;
-  const rightRotation = isOverHalf ? 0 : 180 - clampedProgress * 360;
-  const leftRotation = isOverHalf ? (1 - clampedProgress) * 360 : 180;
-
+  const progress = Math.min(Math.max(rawProgress, 0), 1);
   const halfSize = size / 2;
+
+  let rightDeg = 0;
+  let leftDeg = 0;
+
+  if (progress <= 0.5) {
+    rightDeg = -180 + progress * 360;
+    leftDeg = -180;
+  } else {
+    rightDeg = 0;
+    leftDeg = -180 + (progress - 0.5) * 360;
+  }
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
-      {/* Background ring */}
+      {/* Track ring */}
       <View
         style={[
-          styles.ring,
+          styles.track,
           {
             width: size,
             height: size,
             borderRadius: halfSize,
             borderWidth: strokeWidth,
-            borderColor: BG_COLOR,
           },
         ]}
       />
 
-      {/* Right half progress */}
-      <View
-        style={[
-          styles.halfWrapper,
-          {
-            right: 0,
-            width: halfSize,
-            height: size,
-            borderTopRightRadius: halfSize,
-            borderBottomRightRadius: halfSize,
-          },
-        ]}
-      >
+      {/* Fill layer */}
+      <View style={StyleSheet.absoluteFill}>
+        {/* Right half wrapper */}
         <View
           style={[
-            styles.halfCircle,
-            {
-              width: size,
-              height: size,
-              borderRadius: halfSize,
-              borderWidth: strokeWidth,
-              borderColor: color,
-              left: -halfSize,
-              transform: [{ rotate: `${rightRotation}deg` }],
-            },
+            styles.halfWrapper,
+            { left: halfSize, width: halfSize, height: size },
           ]}
-        />
-      </View>
+        >
+          <View
+            style={[
+              styles.fillCircle,
+              {
+                width: size,
+                height: size,
+                borderRadius: halfSize,
+                borderWidth: strokeWidth,
+                borderColor: color,
+                left: -halfSize,
+                transform: [{ rotate: `${rightDeg}deg` }],
+              },
+            ]}
+          />
+        </View>
 
-      {/* Left half progress */}
-      <View
-        style={[
-          styles.halfWrapper,
-          {
-            left: 0,
-            width: halfSize,
-            height: size,
-            borderTopLeftRadius: halfSize,
-            borderBottomLeftRadius: halfSize,
-          },
-        ]}
-      >
+        {/* Left half wrapper */}
         <View
           style={[
-            styles.halfCircle,
-            {
-              width: size,
-              height: size,
-              borderRadius: halfSize,
-              borderWidth: strokeWidth,
-              borderColor: color,
-              left: 0,
-              transform: [{ rotate: `${leftRotation}deg` }],
-            },
+            styles.halfWrapper,
+            { left: 0, width: halfSize, height: size },
           ]}
-        />
+        >
+          <View
+            style={[
+              styles.fillCircle,
+              {
+                width: size,
+                height: size,
+                borderRadius: halfSize,
+                borderWidth: strokeWidth,
+                borderColor: color,
+                left: 0,
+                transform: [{ rotate: `${leftDeg}deg` }],
+              },
+            ]}
+          />
+        </View>
       </View>
 
       {/* Center text */}
-      <View style={StyleSheet.absoluteFill}>
-        <View style={styles.centerContent}>
-          <Text style={[styles.text, { fontSize: size * 0.22 }]}>
-            {percentage}%
-          </Text>
-        </View>
+      <View style={[StyleSheet.absoluteFill, styles.centerContent]}>
+        <Text style={[styles.percentText, { fontSize: size * 0.25 }]}>
+          {Math.round(progress * 100)}%
+        </Text>
       </View>
     </View>
   );
@@ -118,24 +108,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  ring: {
+  track: {
     position: 'absolute',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   halfWrapper: {
     position: 'absolute',
     top: 0,
     overflow: 'hidden',
   },
-  halfCircle: {
+  fillCircle: {
     position: 'absolute',
     top: 0,
+    backgroundColor: 'transparent',
   },
   centerContent: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  text: {
+  percentText: {
     fontFamily: AURA_FONTS.rounded,
     fontWeight: '700',
     color: '#FFFFFF',

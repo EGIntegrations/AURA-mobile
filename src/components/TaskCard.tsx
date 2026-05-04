@@ -5,29 +5,34 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
-import LiquidGlassCard from './LiquidGlassCard';
 import { Task } from '../types/Task';
-import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import { AURA_COLORS } from '../theme/colors';
+import LiquidGlassCard from './LiquidGlassCard';
 
 export interface TaskCardProps {
   task: Task;
   onPress: () => void;
 }
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  easy: AURA_COLORS.success,
-  medium: AURA_COLORS.accent,
-  hard: AURA_COLORS.danger,
+const difficultyMeta: Record<
+  Task['difficulty'],
+  { label: string; color: string }
+> = {
+  easy: { label: 'Easy', color: AURA_COLORS.success },
+  medium: { label: 'Medium', color: '#FBBF24' },
+  hard: { label: 'Hard', color: AURA_COLORS.danger },
 };
 
 export default function TaskCard({ task, onPress }: TaskCardProps) {
+  const diff = difficultyMeta[task.difficulty];
+
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
-      <LiquidGlassCard style={styles.card}>
+      <LiquidGlassCard padding={16} style={styles.card}>
         <View style={styles.row}>
           <Text style={styles.icon}>{task.icon}</Text>
-          <View style={styles.info}>
+          <View style={styles.content}>
             <Text style={styles.title} numberOfLines={1}>
               {task.title}
             </Text>
@@ -38,21 +43,11 @@ export default function TaskCard({ task, onPress }: TaskCardProps) {
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{task.category}</Text>
               </View>
-              <View style={styles.difficultyBadge}>
+              <View style={[styles.badge, styles.diffBadge]}>
                 <View
-                  style={[
-                    styles.dot,
-                    {
-                      backgroundColor:
-                        DIFFICULTY_COLORS[task.difficulty] ??
-                        AURA_COLORS.primary,
-                    },
-                  ]}
+                  style={[styles.dot, { backgroundColor: diff.color }]}
                 />
-                <Text style={styles.badgeText}>
-                  {task.difficulty.charAt(0).toUpperCase() +
-                    task.difficulty.slice(1)}
-                </Text>
+                <Text style={styles.badgeText}>{diff.label}</Text>
               </View>
             </View>
           </View>
@@ -64,18 +59,18 @@ export default function TaskCard({ task, onPress }: TaskCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    marginVertical: 8,
+    marginVertical: 6,
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   icon: {
-    fontSize: 48,
-    marginRight: 16,
+    fontSize: 40,
+    marginRight: 14,
+    lineHeight: 48,
   },
-  info: {
+  content: {
     flex: 1,
   },
   title: {
@@ -83,38 +78,30 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   description: {
-    fontFamily: AURA_FONTS.rounded,
+    fontFamily: AURA_FONTS.body,
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.70)',
+    color: 'rgba(255,255,255,0.70)',
     lineHeight: 20,
     marginBottom: 10,
   },
   badges: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 8,
   },
   badge: {
-    backgroundColor: AURA_COLORS.glass.overlay,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: AURA_COLORS.glass.borderLight,
+    alignSelf: 'flex-start',
   },
-  difficultyBadge: {
+  diffBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AURA_COLORS.glass.overlay,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: AURA_COLORS.glass.borderLight,
     gap: 6,
   },
   dot: {
@@ -126,6 +113,6 @@ const styles = StyleSheet.create({
     fontFamily: AURA_FONTS.rounded,
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255,255,255,0.85)',
   },
 });

@@ -1,14 +1,13 @@
 import React from 'react';
 import {
-  TouchableOpacity,
-  Text,
   View,
+  Text,
+  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import LiquidGlassCard from './LiquidGlassCard';
 import { VocabularyWord } from '../types/Vocabulary';
-import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
+import LiquidGlassCard from './LiquidGlassCard';
 
 export interface VocabCardProps {
   word: VocabularyWord;
@@ -22,28 +21,23 @@ export default function VocabCard({
   onToggleLearned,
 }: VocabCardProps) {
   return (
-    <LiquidGlassCard style={styles.card}>
-      <View style={styles.header}>
+    <LiquidGlassCard padding={20} style={styles.card}>
+      <View style={styles.topRow}>
         <Text style={styles.emoji}>{word.emoji}</Text>
         <View style={styles.actions}>
           <TouchableOpacity
             onPress={onSpeak}
-            style={styles.actionButton}
+            style={styles.actionBtn}
             activeOpacity={0.7}
           >
             <Text style={styles.actionIcon}>🔊</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={onToggleLearned}
-            style={styles.actionButton}
+            style={styles.actionBtn}
             activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.actionIcon,
-                word.isLearned && styles.learnedStar,
-              ]}
-            >
+            <Text style={styles.actionIcon}>
               {word.isLearned ? '★' : '☆'}
             </Text>
           </TouchableOpacity>
@@ -57,52 +51,45 @@ export default function VocabCard({
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    marginVertical: 8,
+    marginVertical: 6,
   },
-  header: {
+  topRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   emoji: {
     fontSize: 48,
+    lineHeight: 56,
   },
   actions: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 10,
   },
-  actionButton: {
+  actionBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: AURA_COLORS.glass.overlay,
-    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: AURA_COLORS.glass.borderLight,
+    justifyContent: 'center',
   },
   actionIcon: {
     fontSize: 20,
-    color: '#FFFFFF',
-  },
-  learnedStar: {
-    color: '#FFD700',
+    lineHeight: 24,
   },
   word: {
     fontFamily: AURA_FONTS.rounded,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.4,
     marginBottom: 4,
   },
   phonetic: {
-    fontFamily: AURA_FONTS.rounded,
+    fontFamily: AURA_FONTS.body,
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.65)',
-    letterSpacing: 0.2,
+    color: 'rgba(255,255,255,0.60)',
+    fontStyle: 'italic',
   },
 });

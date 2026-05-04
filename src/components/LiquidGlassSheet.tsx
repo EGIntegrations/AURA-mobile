@@ -3,13 +3,15 @@ import {
   Modal,
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   Animated,
   Dimensions,
+  TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
-import LiquidGlassCard from './LiquidGlassCard';
 import { AURA_FONTS } from '../theme/typography';
+import LiquidGlassCard from './LiquidGlassCard';
 
 export interface LiquidGlassSheetProps {
   visible: boolean;
@@ -26,16 +28,17 @@ export default function LiquidGlassSheet({
   title,
   children,
 }: LiquidGlassSheetProps) {
-  const [isModalVisible, setIsModalVisible] = useState(visible);
+  const [showModal, setShowModal] = useState(visible);
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
   useEffect(() => {
     if (visible) {
-      setIsModalVisible(true);
-      Animated.timing(translateY, {
+      setShowModal(true);
+      Animated.spring(translateY, {
         toValue: 0,
-        duration: 300,
         useNativeDriver: true,
+        friction: 9,
+        tension: 40,
       }).start();
     } else {
       Animated.timing(translateY, {
@@ -43,47 +46,52 @@ export default function LiquidGlassSheet({
         duration: 250,
         useNativeDriver: true,
       }).start(() => {
-        setIsModalVisible(false);
+        setShowModal(false);
       });
     }
   }, [visible, translateY]);
 
+  if (!showModal) {
+    return null;
+  }
+
   return (
     <Modal
-      visible={isModalVisible}
       transparent
       animationType="none"
+      visible={showModal}
       onRequestClose={onClose}
+      statusBarTranslucent={Platform.OS === 'android'}
     >
-      <View style={styles.overlay}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          onPress={onClose}
-          activeOpacity={1}
-        />
-        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
-          <LiquidGlassCard style={styles.card} padding={0}>
-            <View style={styles.handleContainer}>
-              <View style={styles.handle} />
-            </View>
-            <View style={styles.header}>
-              {title ? (
-                <Text style={styles.title}>{title}</Text>
-              ) : (
-                <View />
-              )}
-              <TouchableOpacity
-                onPress={onClose}
-                style={styles.closeButton}
-                activeOpacity={0.7}
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback>
+            <Animated.View
+              style={[
+                styles.sheet,
+                { transform: [{ translateY }] },
+              ]}
+            >
+              <LiquidGlassCard
+                cornerRadius={24}
+                padding={0}
+                style={styles.card}
               >
-                <Text style={styles.closeText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.content}>{children}</View>
-          </LiquidGlassCard>
-        </Animated.View>
-      </View>
+                <View style={styles.header}>
+                  <View style={styles.handle} />
+                  <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                    <Text style={styles.closeText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                {!!title && (
+                  <Text style={styles.title}>{title}</Text>
+                )}
+                <View style={styles.body}>{children}</View>
+              </LiquidGlassCard>
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -92,60 +100,57 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   sheet: {
     marginHorizontal: 12,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   card: {
-    overflow: 'hidden',
+    paddingBottom: 16,
   },
-  handleContainer: {
+  header: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 4,
+    position: 'relative',
   },
   handle: {
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: 'rgba(255,255,255,0.35)',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  closeBtn: {
+    position: 'absolute',
+    right: 16,
+    top: 12,
+    width: 28,
+    height: 28,
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    justifyContent: 'center',
+  },
+  closeText: {
+    fontFamily: AURA_FONTS.rounded,
+    fontSize: 18,
+    color: '#FFFFFF',
+    opacity: 0.8,
+    lineHeight: 22,
+    fontWeight: '600',
   },
   title: {
     fontFamily: AURA_FONTS.rounded,
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.5,
-    flex: 1,
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+    paddingHorizontal: 16,
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeText: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+  body: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
   },
 });
