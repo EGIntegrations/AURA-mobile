@@ -30,7 +30,6 @@ export default function AuthenticationScreen() {
   const [displayName, setDisplayName] = useState('');
   const [showBiometric, setShowBiometric] = useState(false);
   const [biometricLabel, setBiometricLabel] = useState('Biometric');
-  const showDemoLogins = __DEV__;
   const localAuthAllowed = AuthenticationService.isOfflineAuthEnabled();
   const requiresBackend = !localAuthAllowed && !BackendClient.isConfigured();
   const offlineMode = localAuthAllowed && !BackendClient.isConfigured();
@@ -66,11 +65,6 @@ export default function AuthenticationScreen() {
     } else {
       await signIn(username.trim(), password);
     }
-  };
-
-  const fillDemoCredentials = (demoUsername: string) => {
-    setUsername(demoUsername);
-    setPassword('demo');
   };
 
   return (
@@ -220,23 +214,6 @@ export default function AuthenticationScreen() {
                 )}
               </LiquidGlassCard>
             </View>
-
-            {showDemoLogins && (
-              <View style={styles.demoContainer}>
-                <Text style={styles.demoLabel}>Quick demo login</Text>
-                <View style={styles.demoChips}>
-                  {['student1'].map((user) => (
-                    <TouchableOpacity
-                      key={user}
-                      style={styles.demoChip}
-                      onPress={() => fillDemoCredentials(user)}
-                    >
-                      <Text style={styles.demoChipText}>{user}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -360,34 +337,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: 'center',
     fontSize: 12,
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.2,
-  },
-  demoContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  demoLabel: {
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 12,
-    marginBottom: 8,
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.2,
-  },
-  demoChips: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  demoChip: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  demoChipText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.2,
   },
