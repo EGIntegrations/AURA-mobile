@@ -3,18 +3,15 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuthStore } from '../store/authStore';
 
-// Import all screens
+// Active screens
 import AuthenticationScreen from '../screens/AuthenticationScreen';
 import DashboardScreen from '../screens/DashboardScreen';
-import GameScreen from '../screens/GameScreen';
-import SpeechPracticeScreen from '../screens/SpeechPracticeScreen';
-import MimicryScreen from '../screens/MimicryScreen';
-import ConversationScreen from '../screens/ConversationScreen';
+import TaskLibraryScreen from '../screens/TaskLibraryScreen';
+import TaskPlayerScreen from '../screens/TaskPlayerScreen';
+import VocabularyScreen from '../screens/VocabularyScreen';
 import ProgressScreen from '../screens/ProgressScreen';
-import AdminDashboardScreen from '../screens/AdminDashboardScreen';
-import APIKeyConfigScreen from '../screens/APIKeyConfigScreen';
-import VoiceCommandScreen from '../screens/VoiceCommandScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+
 import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 import { Logger } from '../services/Logger';
@@ -67,43 +64,23 @@ export default function RootNavigator() {
         <>
           <Stack.Screen name="Dashboard" component={DashboardScreen} />
           <Stack.Screen
-            name="Game"
-            component={GameScreen}
+            name="TaskLibrary"
+            component={TaskLibraryScreen}
             options={{ presentation: 'fullScreenModal' }}
           />
           <Stack.Screen
-            name="SpeechPractice"
-            component={SpeechPracticeScreen}
+            name="TaskPlayer"
+            component={TaskPlayerScreen}
             options={{ presentation: 'fullScreenModal' }}
           />
           <Stack.Screen
-            name="Mimicry"
-            component={MimicryScreen}
-            options={{ presentation: 'fullScreenModal' }}
-          />
-          <Stack.Screen
-            name="Conversation"
-            component={ConversationScreen}
-            options={{ presentation: 'fullScreenModal' }}
+            name="Vocabulary"
+            component={VocabularyScreen}
+            options={{ presentation: 'modal' }}
           />
           <Stack.Screen
             name="Progress"
             component={ProgressScreen}
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="AdminDashboard"
-            component={AdminDashboardScreen}
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="APIKeyConfig"
-            component={APIKeyConfigScreen}
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="VoiceCommands"
-            component={VoiceCommandScreen}
             options={{ presentation: 'modal' }}
           />
           <Stack.Screen
