@@ -180,7 +180,7 @@ export class AuthenticationService {
         soundEnabled: true,
         theme: 'dark',
         age: 6,
-        specialInterests: [],
+        specialInterests: ['Animals', 'Vehicles'],
       },
       permissions: this.getDefaultPermissions(sanitizedRole),
     };
@@ -495,7 +495,7 @@ export class AuthenticationService {
         soundEnabled: true,
         theme: 'dark',
         age: 6,
-        specialInterests: [],
+        specialInterests: ['Animals', 'Vehicles'],
       },
       permissions: this.getDefaultPermissions(UserRole.STUDENT),
     };
