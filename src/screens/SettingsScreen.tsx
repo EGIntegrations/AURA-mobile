@@ -11,8 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
 import LiquidGlassCard from '../components/LiquidGlassCard';
-import { AURA_COLORS } from '../theme/colors';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
+import { AURA_COLORS } from '../theme/colors';
 import { AURA_FONTS } from '../theme/typography';
 
 export default function SettingsScreen({ navigation }: any) {
@@ -44,7 +44,12 @@ export default function SettingsScreen({ navigation }: any) {
 
         <LiquidGlassCard>
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Sound</Text>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Sound</Text>
+              <Text style={styles.settingDescription}>
+                Enable or disable app sounds
+              </Text>
+            </View>
             <Switch
               value={soundEnabled}
               onValueChange={setSoundEnabled}
@@ -56,7 +61,12 @@ export default function SettingsScreen({ navigation }: any) {
 
         <LiquidGlassCard>
           <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Dark Theme</Text>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingTitle}>Theme</Text>
+              <Text style={styles.settingDescription}>
+                {isDarkTheme ? 'Dark' : 'Light'} mode
+              </Text>
+            </View>
             <Switch
               value={isDarkTheme}
               onValueChange={setIsDarkTheme}
@@ -66,13 +76,11 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
         </LiquidGlassCard>
 
-        <TouchableOpacity
-          style={[styles.signOutButton, { backgroundColor: AURA_COLORS.glass.base }]}
-          onPress={handleSignOut}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
+        <LiquidGlassCard>
+          <TouchableOpacity style={styles.signOutRow} onPress={handleSignOut} activeOpacity={0.8}>
+            <Text style={styles.signOutText}>Sign Out</Text>
+          </TouchableOpacity>
+        </LiquidGlassCard>
       </ScrollView>
     </View>
   );
@@ -96,23 +104,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
-  settingLabel: {
+  settingInfo: {
+    flex: 1,
+    paddingRight: 16,
+    gap: 6,
+  },
+  settingTitle: {
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
-  signOutButton: {
+  settingDescription: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontFamily: AURA_FONTS.rounded,
+    letterSpacing: 0.3,
+  },
+  signOutRow: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: AURA_COLORS.glass.borderLight,
-    marginTop: 8,
+    paddingVertical: 8,
   },
   signOutText: {
     fontSize: 16,
