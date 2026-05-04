@@ -1,83 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Switch,
-  Alert,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import AuraBackground from '../components/AuraBackground';
 import LiquidGlassCard from '../components/LiquidGlassCard';
-import GlassButton from '../components/GlassButton';
-import { BiometricService } from '../services/BiometricService';
-import { ConsentService } from '../services/ConsentService';
 import { AURA_COLORS } from '../theme/colors';
 import LiquidGlassHeader from '../components/LiquidGlassHeader';
 import { AURA_FONTS } from '../theme/typography';
 
 export default function SettingsScreen({ navigation }: any) {
-  const { currentUser } = useAuthStore();
+  const { signOut } = useAuthStore();
   const insets = useSafeAreaInsets();
-  const [biometricEnabled, setBiometricEnabled] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [biometricLabel, setBiometricLabel] = useState('Biometric Login');
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [aiConsentEnabled, setAiConsentEnabled] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isDarkTheme, setIsDarkTheme] = useState(true);
 
-  useEffect(() => {
-    const loadBiometricStatus = async () => {
-      try {
-        const canAuth = await BiometricService.canAuthenticate();
-        const enabled = await BiometricService.isEnabled();
-        const type = await BiometricService.getBiometricType();
-        const aiConsent = await ConsentService.hasAIProcessingConsent();
-        const label =
-          type === 'faceId' ? 'Face ID' : type === 'touchId' || type === 'fingerprint' ? 'Touch ID' : 'Biometric';
-        setBiometricLabel(label);
-        setBiometricAvailable(canAuth);
-        setBiometricEnabled(enabled);
-        setAiConsentEnabled(aiConsent);
-      } catch (error) {
-        setBiometricAvailable(false);
-        setBiometricEnabled(false);
-        setAiConsentEnabled(false);
-      }
-    };
-
-    loadBiometricStatus();
-  }, []);
-
-  const handleToggleBiometric = async (value: boolean) => {
-    if (!currentUser) {
-      Alert.alert('Unavailable', 'Please sign in to configure biometric login.');
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      if (value) {
-        await BiometricService.enable(currentUser.username);
-      } else {
-        await BiometricService.disable();
-      }
-      setBiometricEnabled(value);
-    } catch (error) {
-      Alert.alert('Biometric Login', (error as Error).message);
-      setBiometricEnabled(await BiometricService.isEnabled());
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleToggleAIConsent = async (value: boolean) => {
-    await ConsentService.setAIProcessingConsent(value);
-    setAiConsentEnabled(value);
-    if (!value) {
-      Alert.alert('AI Consent', 'AI-powered camera and conversation features are now disabled.');
-    }
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -98,66 +43,36 @@ export default function SettingsScreen({ navigation }: any) {
         />
 
         <LiquidGlassCard>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Access</Text>
-            <Text style={styles.sectionSubtitle}>Secure sign-in preferences</Text>
-          </View>
-
           <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>{biometricLabel}</Text>
-              <Text style={styles.settingDescription}>
-                {biometricAvailable
-                  ? 'Use biometrics to sign in faster.'
-                  : 'Biometric authentication is not available on this device.'}
-              </Text>
-            </View>
+            <Text style={styles.settingLabel}>Sound</Text>
             <Switch
-              value={biometricEnabled}
-              onValueChange={handleToggleBiometric}
-              disabled={!biometricAvailable || isUpdating}
+              value={soundEnabled}
+              onValueChange={setSoundEnabled}
               trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: AURA_COLORS.accentSoft }}
-              thumbColor={biometricEnabled ? AURA_COLORS.accent : 'rgba(255, 255, 255, 0.9)'}
+              thumbColor={soundEnabled ? AURA_COLORS.accent : 'rgba(255, 255, 255, 0.9)'}
             />
           </View>
         </LiquidGlassCard>
 
         <LiquidGlassCard>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Voice Commands</Text>
-            <Text style={styles.sectionSubtitle}>
-              Control AURA hands-free from a single place.
-            </Text>
-          </View>
-          <GlassButton
-            title="Open Voice Commands"
-            onPress={() => navigation.navigate('VoiceCommands')}
-            customStyle={styles.actionButton}
-          />
-        </LiquidGlassCard>
-
-        <LiquidGlassCard>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>AI Data Processing</Text>
-            <Text style={styles.sectionSubtitle}>
-              Required for AI conversation and camera emotion analysis.
-            </Text>
-          </View>
           <View style={styles.settingRow}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Allow AI processing</Text>
-              <Text style={styles.settingDescription}>
-                Your text/audio/images may be sent to configured AI services.
-              </Text>
-            </View>
+            <Text style={styles.settingLabel}>Dark Theme</Text>
             <Switch
-              value={aiConsentEnabled}
-              onValueChange={handleToggleAIConsent}
+              value={isDarkTheme}
+              onValueChange={setIsDarkTheme}
               trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: AURA_COLORS.accentSoft }}
-              thumbColor={aiConsentEnabled ? AURA_COLORS.accent : 'rgba(255, 255, 255, 0.9)'}
+              thumbColor={isDarkTheme ? AURA_COLORS.accent : 'rgba(255, 255, 255, 0.9)'}
             />
           </View>
         </LiquidGlassCard>
+
+        <TouchableOpacity
+          style={[styles.signOutButton, { backgroundColor: AURA_COLORS.glass.base }]}
+          onPress={handleSignOut}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -177,47 +92,33 @@ const styles = StyleSheet.create({
   headerCard: {
     marginBottom: 4,
   },
-  sectionHeader: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.4,
-  },
-  sectionSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 4,
-    fontFamily: AURA_FONTS.rounded,
-    letterSpacing: 0.3,
-  },
   settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 8,
   },
-  settingInfo: {
-    flex: 1,
-    paddingRight: 16,
-    gap: 6,
-  },
-  settingTitle: {
+  settingLabel: {
     fontSize: 16,
     color: 'white',
     fontWeight: '600',
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
   },
-  settingDescription: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.75)',
+  signOutButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: AURA_COLORS.glass.borderLight,
+    marginTop: 8,
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: AURA_COLORS.danger,
     fontFamily: AURA_FONTS.rounded,
     letterSpacing: 0.3,
-  },
-  actionButton: {
-    marginTop: 4,
   },
 });
